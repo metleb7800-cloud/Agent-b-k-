@@ -1,0 +1,25 @@
+AGENT ŞƏBƏKƏSİ — GitHub + Railway quraşdırma
+=============================================
+
+1) GitHub → New repository → ad: agent-sebekesi (Private ola bilər)
+   "uploading an existing file" → bu faylları at:
+   index.html, app.py, requirements.txt, Procfile, .gitignore
+   → Commit changes
+
+2) railway.com → New Project → Deploy from GitHub repo → agent-sebekesi
+
+3) Eyni layihədə: + New (və ya Create) → Database → PostgreSQL
+
+4) agent-sebekesi xidmətinə bas → Variables:
+   DATABASE_URL = ${{Postgres.DATABASE_URL}}
+   SECRET_KEY   = istənilən uzun söz (məs. 40 təsadüfi hərf-rəqəm)
+
+5) Settings → Networking → Generate Domain → ünvanı aç
+   - Birinci dəfə: qurucu adını yaz
+   - Sonra: Kod ADMIN, parol 123 → Profil-dən dərhal dəyiş
+
+6) Köhnə məlumat: köhnə HTML-də "JSON ixrac et" → yeni saytda
+   qurucu kimi "JSON bərpa et".
+
+Yeniləmə: GitHub-da index.html-i əvəz et → Railway özü yenidən qurur.
+Robot (Tampermonkey) yeni ünvanda da işləyir.

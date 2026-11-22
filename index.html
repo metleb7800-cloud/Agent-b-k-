@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="az"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agent Şəbəkəsi</title><style>*{box-sizing:border-box}
+:root{--bg:#f4f6fa;--card:#fff;--tx:#111827;--mu:#6b7280;--bd:#e5e7eb;--pr:#1d4ed8}
+body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx)}
+a{color:var(--pr);text-decoration:none}a:hover{text-decoration:underline}
+main{max-width:1200px;margin:0 auto;padding:20px}
+h1{font-size:24px;margin:8px 0 4px}h2{font-size:17px;margin:0 0 12px}h3{font-size:15px;margin:16px 0 8px}
+.muted{color:var(--mu)}
+.top{display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:#0f172a;color:#fff;padding:10px 20px}
+.top a{color:#cbd5e1}.top .brand{color:#fff;font-weight:700;font-size:17px}
+.top nav{display:flex;gap:4px;flex-wrap:wrap;flex:1}
+.top nav a{padding:6px 12px;border-radius:8px}.top nav a.on,.top nav a:hover{background:#1e293b;color:#fff;text-decoration:none}
+.top .who{font-size:14px}.top .who small{background:#334155;padding:2px 8px;border-radius:99px;margin:0 6px}
+.dot{background:#ef4444;color:#fff;border-radius:99px;padding:0 7px;font-size:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px;margin-bottom:16px}
+.narrow{max-width:420px;margin:40px auto}
+.grid2{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-top:16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:16px}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;color:var(--tx);display:flex;flex-direction:column}
+.stat b{font-size:28px}.stat span{color:var(--mu);font-size:13px}.stat small{color:var(--mu)}a.stat:hover{text-decoration:none;box-shadow:0 2px 8px #0001}
+label{display:block;margin-bottom:12px;font-size:13px;color:#374151;font-weight:500}
+input,select,textarea{display:block;width:100%;margin-top:4px;padding:9px 11px;border:1px solid #d1d5db;border-radius:8px;font:inherit;background:#fff}
+input:focus,select:focus,textarea:focus{outline:2px solid #93c5fd;border-color:var(--pr)}
+.row{display:flex;gap:12px}.row>*{flex:1}
+.btn{display:inline-block;background:var(--pr);color:#fff;border:0;border-radius:8px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer}
+.btn:hover{background:#1e40af;text-decoration:none}.btn.wide{width:100%}.btn.sm{padding:6px 12px;font-size:13px}
+.btn.ghost{background:#e5e7eb;color:#111}.btn.danger{background:#dc2626}
+.link{background:none;border:0;color:var(--pr);cursor:pointer;font:inherit;font-size:13px;padding:0 4px}
+.flash{padding:10px 14px;border-radius:8px;margin:10px 0}.flash.ok{background:#dcfce7;color:#166534}.flash.err{background:#fee2e2;color:#991b1b}
+.badge{padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;vertical-align:middle}
+.tbl{overflow-x:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--bd);vertical-align:top}
+th{font-size:12px;color:var(--mu);text-transform:uppercase}tr[onclick]{cursor:pointer}tr[onclick]:hover{background:#f9fafb}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}.filters input,.filters select{width:auto;margin:0}.filters input[name=s]{flex:1;min-width:200px}
+.pager{margin-top:12px;display:flex;gap:4px;flex-wrap:wrap}.pager a{padding:4px 10px;border:1px solid var(--bd);border-radius:6px}.pager a.on{background:var(--pr);color:#fff}
+.form{max-width:720px}
+.drop{border:2px dashed #cbd5e1;border-radius:10px;padding:14px;background:#f8fafc}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:6px 12px;margin:0}.kv dt{color:var(--mu)}.kv dd{margin:0;font-weight:500}
+.note{background:#f8fafc;border-left:3px solid var(--pr);padding:10px 12px;border-radius:6px}
+.files{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.file{border:1px solid var(--bd);border-radius:10px;overflow:hidden;color:var(--tx);display:flex;flex-direction:column}
+.file img{width:100%;height:100px;object-fit:cover;background:#eee}.file .ext{height:100px;display:grid;place-items:center;background:#eef2ff;font-weight:700;color:var(--pr);font-size:20px}
+.file small{padding:6px 8px;word-break:break-all;font-size:11px}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}.seg label{margin:0}.seg input{display:none}
+.seg span{display:inline-block;padding:7px 12px;border:1px solid var(--bd);border-radius:8px;cursor:pointer;font-weight:600;color:var(--c)}
+.seg input:checked+span{background:var(--c);color:#fff;border-color:var(--c)}
+.log{list-style:none;padding:0;margin:0 0 12px;font-size:14px}.log li{padding:8px 0;border-bottom:1px solid var(--bd)}
+form.inline{display:inline}.card form.inline{display:flex;gap:8px}.card form.inline input{margin:0}
+.top li,ol.top li{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd)}ol.top{padding-left:0;list-style:none;counter-reset:n}
+.tree ul{list-style:none;padding-left:26px;margin:0;border-left:2px solid #e2e8f0}.tree>ul{padding-left:0;border:0}
+.tree li{margin:6px 0}.node{padding:8px 10px;border:1px solid var(--bd);border-radius:10px;background:#fff;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.node.off{opacity:.5;background:#f3f4f6}.node .acts{margin-left:auto}.node form.inline{display:inline}
+.role{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;text-transform:uppercase}
+.r-founder{background:#fef3c7;color:#92400e}.r-admin{background:#dbeafe;color:#1e40af}.r-agent{background:#dcfce7;color:#166534}
+.pill{font-size:12px;background:#f1f5f9;padding:2px 8px;border-radius:99px;color:#334155}
+dialog{border:0;border-radius:14px;padding:22px;width:min(420px,92vw);box-shadow:0 20px 60px #0004}dialog::backdrop{background:#0006}
+@media(max-width:800px){.top nav{order:3;flex:0 0 100%;flex-wrap:nowrap;overflow-x:auto}.top nav a{white-space:nowrap}.grid2{grid-template-columns:1fr}.row{flex-direction:column;gap:0}main{padding:12px}.top{gap:8px}.node .acts{margin-left:0;width:100%}}
+
+.pair{display:flex;gap:6px;margin-top:4px}.pair select{width:90px;flex:none;margin:0}.pair input{margin:0}.up{text-transform:uppercase}.up::placeholder{text-transform:none}
+.send{border:2px solid #16a34a;background:#f0fdf4}.send .big{font-size:20px;letter-spacing:1px}.btn.wa{background:#16a34a}.send .row{flex-wrap:wrap}
+#cp{margin-top:10px}.btn.xl{background:#16a34a;margin-left:auto}
+.copybox{margin-top:16px;border:2px solid #bfdbfe;background:#eff6ff;border-radius:10px;padding:12px}.copybox h3{margin:0 0 8px}
+.crow{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px dashed #cbd5e1}.crow:last-child{border:0}.crow>span{width:105px;color:#475569;font-size:13px;flex:none}
+.chip{font:600 15px/1 ui-monospace,Consolas,monospace;background:#fff;border:1px solid #93c5fd;color:#1e3a8a;border-radius:8px;padding:8px 12px;margin:2px 6px 2px 0;cursor:pointer}
+.chip:hover{background:#dbeafe}.chip.ok{background:#16a34a;border-color:#16a34a;color:#fff}.chip.ok::after{content:' ✓'}
+.kv dd{display:flex;align-items:center;gap:8px}
+.cpb{border:1px solid #cbd5e1;background:#fff;border-radius:6px;padding:1px 6px;font-size:12px;cursor:pointer;line-height:20px;opacity:.75}
+.cpb:hover{opacity:1;background:#eff6ff;border-color:#93c5fd}.cpb.ok{background:#16a34a;border-color:#16a34a;color:#fff;opacity:1}
+.kv{grid-template-columns:130px 1fr}
+</style></head>
+<body><div id="app"></div><script>// ===== Agent Şəbəkəsi — server versiyası (məlumat serverdə, MySQL) =====
+const KEY = 'agentnet_v1';
+const STATUSES = { yeni:['Yeni','#2563eb'], baxilir:['Baxılır','#d97706'], tesdiq:['Təsdiqləndi','#16a34a'], redd:['Rədd edildi','#dc2626'] };
+const HIDDEN_ST = ['baxilir']; // artıq istifadə olunmur — yeri boş qalır (düymələr yerindən tərpənməsin)
+const ROLES = { founder:'Qurucu', admin:'Admin', agent:'Agent' };
+const ALLOWED = ['pdf','jpg','jpeg','png','webp','heic','doc','docx','xls','xlsx'];
+const MAX_MB = 3;
+
+// ---------- SERVER QATI ----------
+const API = 'api.php', KINDS = ['users','docs','files','log'];
+let BASE = {}, SRV = { hasUsers:false, rev:0, uid:0 };
+function blank(){ return { users:[], docs:[], files:[], log:[], seq:{u:0,d:0,f:0,l:0} }; }
+function xhr(method, q, body){
+  const x = new XMLHttpRequest(); x.open(method, API + '?' + q, false);
+  if (body) x.setRequestHeader('Content-Type', 'application/json');
+  try { x.send(body ? JSON.stringify(body) : null); return JSON.parse(x.responseText); }
+  catch(e){ return { ok:false, err:'Serverlə əlaqə yoxdur. İnterneti yoxlayın.' }; }
+}
+function snap(st){ const b = { _fp: st.founderPreset || 0 }; for (const k of KINDS){ b[k] = {}; for (const r of st[k] || []) b[k][r.id] = JSON.stringify(r); } return b; }
+function cacheForRobot(st){ try { localStorage.setItem(KEY, JSON.stringify({ docs: st.docs || [] })); } catch(e){} }
+function setState(r){
+  SRV.hasUsers = !!r.hasUsers; SRV.rev = r.rev || 0; SRV.uid = r.uid || 0;
+  const st = r.state || blank(); BASE = snap(st); cacheForRobot(st);
+  if (SRV.uid) sessionStorage.setItem('agentnet_uid', SRV.uid); else sessionStorage.removeItem('agentnet_uid');
+  return st;
+}
+function load(){ const r = xhr('GET', 'a=state'); return r && r.ok ? setState(r) : (alert(r.err || 'Server xətası'), blank()); }
+function diff(){
+  const ch = {}, del = {}; let n = 0;
+  for (const k of KINDS){ const b = BASE[k] || {}, cur = {};
+    for (const r of S[k] || []) { cur[r.id] = 1; if (b[r.id] !== JSON.stringify(r)) { (ch[k] = ch[k] || []).push(r); n++; } }
+    for (const id in b) if (!cur[id]) { (del[k] = del[k] || []).push(+id); n++; } }
+  const meta = {}; if ((S.founderPreset || 0) !== (BASE._fp || 0)) { meta.founderPreset = S.founderPreset; n++; }
+  return n ? { ch, del, meta } : null;
+}
+function save(){
+  const d = diff(); if (!d) return true;
+  const r = xhr('POST', 'a=sync', d);
+  if (!r || !r.ok) { alert((r && r.err) || 'Yadda saxlanmadı'); S = load(); return false; }
+  S = setState(r); return true;
+}
+const nid = k => { const r = xhr('GET', 'a=nid&k=' + k); if (!r || !r.ok) { alert((r && r.err) || 'Server xətası'); throw new Error('nid'); } return r.id; };
+let S = load();
+// Yeni sənədlər / dəyişikliklər üçün serveri yoxla (15 san.)
+setInterval(async () => {
+  if (!SRV.uid || diff()) return;
+  try {
+    const r = await (await fetch(API + '?a=state&rev=' + SRV.rev + '&uid=' + SRV.uid, { cache:'no-store' })).json();
+    if (!r.ok || r.same || diff()) return;
+    S = setState(r);
+    const ae = document.activeElement, page = (location.hash.slice(1).split('?')[0] || 'home').split('/')[0];
+    const busy = (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) || document.querySelector('dialog[open]');
+    if (!busy && ['home','docs','done','doc','team'].includes(page)) { const y = scrollY; render(); scrollTo(0, y); }
+  } catch(e){}
+}, 15000);
+function newCode(){ let c; do { c = String(100000 + Math.floor(Math.random()*900000)); } while (S.users.some(u => u.code === c)); return c; }
+S.docs.forEach(d => { if (d.status === 'baxilir') { d.status = 'yeni'; save(); } });
+S.docs.forEach(d => { if (d.dqn && d.dqn.includes('-')) { const n = d.dqn.replace(/-/g, ''); d.title = d.title.replace(d.dqn, n); d.dqn = n; save(); } });
+if (S.users.some(u => !u.code)) { S.users.forEach(u => { if (!u.code) u.code = newCode(); }); save(); }
+const now = () => { const d=new Date(), p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+const e = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function hash(pw){ const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('agentnet:'+pw)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+
+const U = id => S.users.find(u => u.id === +id);
+const me = () => { const id = +sessionStorage.getItem('agentnet_uid'); const u = U(id); return u && u.active ? u : null; };
+const inBranch = (v, t) => t.path.startsWith(v.path);
+const isF = u => u.role === 'founder';
+const canSee = (v, d) => isF(v) || d.user_id === v.id;
+const canReview = v => isF(v);
+const roleName = u => u.role === 'agent' && u.depth > 3 ? 'Alt-agent' : ROLES[u.role];
+const childRole = u => u.role === 'founder' ? 'admin' : 'agent';
+const chain = path => path.split('/').filter(Boolean).map(id => e(U(id)?.name || '?')).join(' › ');
+const badge = s => { const [t,c] = STATUSES[s]; return `<span class="badge" style="background:${c}1a;color:${c}">${t}</span>`; };
+const branchDocs = u => S.docs.filter(d => canSee(u, d)).sort((a,b) => b.id - a.id);
+const logAdd = (doc, uid, action, note=null) => S.log.push({ id:nid('l'), document_id:doc, user_id:uid, action, note, created_at:now() });
+
+let flashMsg = null;
+function flash(m, t='ok'){ flashMsg = [m, t]; }
+function go(h){ if (location.hash === h) render(); else location.hash = h; }
+const $ = s => document.querySelector(s);
+const app = () => $('#app');
+
+// ---------- ARXA FON ŞABLONLARI ----------
+const BGS = {
+  none:   ['Standart', ''],
+  okean:  ['Okean', 'linear-gradient(135deg,#a1c4fd 0%,#c2e9fb 100%)'],
+  gunes:  ['Gün batımı', 'linear-gradient(135deg,#fbc2eb 0%,#fdd6bd 50%,#a6c1ee 100%)'],
+  mesa:   ['Meşə', 'linear-gradient(135deg,#d4fc79 0%,#96e6a1 100%)'],
+  gece:   ['Gecə', 'radial-gradient(circle at 20% 20%,#3b4b8a 0,transparent 40%),radial-gradient(circle at 80% 70%,#6b3b8a 0,transparent 45%),linear-gradient(160deg,#0f172a,#1e1b4b)'],
+  qizil:  ['Qızılı', 'linear-gradient(135deg,#f6d365 0%,#fda085 100%)'],
+  noqte:  ['Nöqtəli', 'radial-gradient(#cbd5e1 1.2px,transparent 1.2px) 0 0/18px 18px,#f8fafc'],
+  xett:   ['Xətli', 'repeating-linear-gradient(45deg,#eef2ff 0 14px,#e0e7ff 14px 28px)'],
+  dalga:  ['Dalğa', 'radial-gradient(circle at 100% 50%,transparent 20%,#dbeafe 21%,#dbeafe 34%,transparent 35%) 0 0/50px 100px,radial-gradient(circle at 0% 50%,transparent 20%,#dbeafe 21%,#dbeafe 34%,transparent 35%) 25px 50px/50px 100px,#eff6ff'],
+};
+function applyBg(u){
+  const b = document.body.style;
+  document.body.classList.toggle('darkbg', !!(u && (u.bgImg || u.bg === 'gece')));
+  if (!document.getElementById('bgcss')) document.head.insertAdjacentHTML('beforeend', '<style id="bgcss">body.darkbg main > h1, body.darkbg main > h2, body.darkbg main > p, body.darkbg main > .muted, body.darkbg main > div > h1, body.darkbg main > p *{color:#fff !important;text-shadow:0 1px 4px #000c}</style>');
+  if (u && u.bgImg) { b.background = `url(${u.bgImg}) center/cover fixed no-repeat`; return; }
+  const v = u && u.bg && BGS[u.bg] ? BGS[u.bg][1] : '';
+  b.background = v; if (v) b.backgroundAttachment = 'fixed';
+}
+
+// ---------- ŞABLON ----------
+function shell(u, page, body){
+  const n = isF(u) ? S.docs.filter(d => d.status === 'yeni' && d.user_id !== u.id).length : S.docs.filter(d => d.user_id === u.id && (d.status === 'redd' || (d.isb_code && !d.code_seen))).length;
+  const f = flashMsg; flashMsg = null;
+  const a = (p, t) => `<a href="#${p}" class="${page===p?'on':''}">${t}</a>`;
+  applyBg(u);
+  app().innerHTML = `<header class="top"><a class="brand" href="#home">Agent Şəbəkəsi</a>
+    <nav>${a('home','Panel')}${a('docs','Sənədlər'+(n?` <b class="dot">${n}</b>`:''))}${a('new','+ Sənəd göndər')}${a('team','Komanda')}${a('done','✓ Təsdiqlənənlər')}</nav>
+    <div class="who" style="position:relative">${u.avatar ? `<img src="${u.avatar}" alt="" style="position:absolute;right:100%;top:50%;transform:translateY(-50%);margin-right:8px;width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #fff">` : ''}${e(u.name)} <small>${roleName(u)}</small> <a href="#profile">Profil</a> · <a href="#logout">Çıxış</a></div></header>
+    <main>${f ? `<div class="flash ${f[1]}">${e(f[0])}</div>` : ''}${body}</main>`;
+}
+function docTable(rows){
+  if (!rows.length) return '<p class="muted">Sənəd yoxdur.</p>';
+  return `<div class="tbl"><table><tr><th>#</th><th>Başlıq</th><th>Telefon</th><th>Göndərən</th><th>Status</th><th>Tarix</th></tr>${
+    rows.map(d => `<tr onclick="location.hash='doc/${d.id}'"><td>${d.id}</td><td><a href="#doc/${d.id}">${e(d.title)}</a>${d.doc_type?`<br><small class="muted">${e(d.doc_type)}</small>`:''}</td>
+      <td>${e((d.customer_phone || '').replace(/^0/, ''))}</td><td>${e(U(d.user_id)?.name)}</td><td>${badge(d.status)}</td><td><small>${d.created_at}</small></td></tr>`).join('')}</table></div>`;
+}
+
+// ---------- SƏHİFƏLƏR ----------
+function pSetup(){
+  app().innerHTML = `<main class="narrow"><div class="card"><h1>Quraşdırma</h1><p class="muted">İlk dəfədir açılır. Qurucu (ən yuxarı) hesabını yaradın:</p>
+    <form id="f"><label>Ad Soyad<input name="name" required></label>
+    <label>Telefon nömrəsi${phoneFields()}</label>
+    <label>Giriş kodu<input name="code" required class="up" maxlength="12" value="admin"></label>
+    <label>Parol<input name="password" required minlength="3" value="123"></label>
+    <button class="btn wide">Qurucunu yarat</button></form>
+    <p class="muted" style="margin-top:14px">və ya <a href="#" id="imp">ehtiyat nüsxəni (JSON) bərpa et</a></p></div></main>`;
+  $('#f').onsubmit = async ev => { ev.preventDefault(); const f = new FormData(ev.target);
+    const id = nid('u');
+    S.founderPreset = 1; S.users.push({ id, parent_id:null, role:'founder', name:f.get('name').trim(), code:(f.get('code').trim().toUpperCase() || newCode()), phone:readPhone(f),
+      pw:await hash(f.get('password')), path:`/${id}/`, depth:1, active:true, created_at:now() });
+    save(); sessionStorage.setItem('agentnet_uid', id); flash(`Sizin giriş kodunuz: ${U(id).code} — yadda saxlayın.`); go('#home'); };
+  $('#imp').onclick = ev => { ev.preventDefault(); importJSON(); };
+}
+
+function pLogin(){
+  app().innerHTML = `<main class="narrow"><div class="card"><h1>Agent Şəbəkəsi</h1><div id="err"></div>
+    <form id="f"><label>Kod<input name="code" required autofocus inputmode="numeric" autocomplete="username" placeholder="Giriş kodunuz"></label>
+    <label>Parol<input type="password" name="password" required></label><button class="btn wide">Daxil ol</button></form></div></main>`;
+  $('#f').onsubmit = async ev => { ev.preventDefault(); const f = new FormData(ev.target);
+    const k = f.get('code').trim().toUpperCase(); const r = xhr('POST', 'a=login', { code:k, pw: await hash(f.get('password')) });
+    if (r && r.ok) { S = setState(r); go('#home'); }
+    else $('#err').innerHTML = '<div class="flash err">Kod və ya parol səhvdir.</div>'; };
+}
+
+function pHome(u){
+  const docs = branchDocs(u), today = now().slice(0,10), month = today.slice(0,7);
+  const team = S.users.filter(x => inBranch(u,x) && x.id !== u.id);
+  const cnt = {}; docs.filter(d => d.created_at.startsWith(month)).forEach(d => cnt[d.user_id] = (cnt[d.user_id]||0)+1);
+  const top = Object.entries(cnt).sort((a,b) => b[1]-a[1]).slice(0,5);
+  shell(u, 'home', `<h1>Salam, ${e(u.name)}</h1><p class="muted">Sizin budaq: ${chain(u.path)}</p>
+    <div class="stats">
+      <div class="stat"><b>${team.length}</b><span>Budaqdakı agentlər</span><small>${S.users.filter(x=>x.parent_id===u.id).length} birbaşa</small></div>
+      <div class="stat"><b>${docs.filter(d=>d.created_at.startsWith(today)).length}</b><span>${isF(u) ? 'Bu gün gələn sənəd' : 'Bu gün göndərdim'}</span></div>
+      ${Object.entries(STATUSES).map(([k,[t,c]]) => `<a class="stat" href="#docs?status=${k}" style="border-top:3px solid ${c}${HIDDEN_ST.includes(k) ? ';visibility:hidden' : ''}"><b>${docs.filter(d=>d.status===k).length}</b><span>${t}</span></a>`).join('')}
+      <div class="stat"><b>${S.docs.filter(d=>d.user_id===u.id).length}</b><span>Özüm göndərdim</span></div>
+    </div>
+    <div class="grid2"><div class="card"><h2>${isF(u) ? 'Son gələn sənədlər' : 'Mənim son sənədlərim'}</h2>${docTable(docs.filter(d => d.status !== 'tesdiq').slice(0,10))}<a href="#docs">Hamısına bax →</a></div>
+      <div class="card">${isF(u) ? `<h2>Bu ayın ən aktivləri</h2>${top.length ? '' : '<p class="muted">Hələ sənəd yoxdur.</p>'}
+        <ol class="top">${top.map(([id,c]) => `<li>${e(U(id)?.name)} <b>${c}</b></li>`).join('')}</ol>` : '<h2>Sənəd göndər</h2><p class="muted">Göndərdiyiniz sənədlər birbaşa qurucuya düşür.</p>'}
+        <a class="btn" href="#new">+ Sənəd göndər</a>
+        ${u.role==='founder' ? `<hr style="border:0;border-top:1px solid var(--bd);margin:16px 0"><h2>Ehtiyat nüsxə</h2>
+          <button class="btn ghost sm" id="exp">JSON ixrac et</button> <button class="btn ghost sm" id="imp">JSON bərpa et</button>` : ''}
+      </div></div>`);
+  if (u.role === 'founder') { $('#exp').onclick = exportJSON; $('#imp').onclick = importJSON; }
+}
+
+function pDocs(u, qs, done = false){
+  const st = qs.get('status') || '', s = (qs.get('s') || '').toLowerCase(), who = +(qs.get('who') || 0), from = qs.get('from') || '', to = qs.get('to') || '';
+  let rows = branchDocs(u);
+  // Təsdiqlənənlər ayrıca bölmədədir; əsas siyahıda yalnız işlənməmiş sənədlər
+  if (done) rows = rows.filter(d => d.status === 'tesdiq'); else if (st !== 'tesdiq') rows = rows.filter(d => d.status !== 'tesdiq');
+  if (STATUSES[st]) rows = rows.filter(d => d.status === st);
+  if (s) rows = rows.filter(d => [d.title,d.customer_name,d.customer_phone,d.customer_phone?.replace(/\D/g,''),d.doc_type,d.dqn,d.dqn?.replace(/-/g,''),d.fin,d.texpasport,d.id_card,d.license].some(x => (x||'').toLowerCase().includes(s)));
+  if (isF(u) && who && U(who)) rows = rows.filter(d => d.path.startsWith(U(who).path));
+  if (from) rows = rows.filter(d => d.created_at.slice(0,10) >= from);
+  if (to) rows = rows.filter(d => d.created_at.slice(0,10) <= to);
+  const people = S.users.filter(x => inBranch(u,x)).sort((a,b) => a.path.localeCompare(b.path));
+  shell(u, done ? 'done' : 'docs', `<h1>${done ? '✓ Təsdiqlənənlər' : isF(u) ? 'Gələn sənədlər' : 'Mənim sənədlərim'} <small class="muted">(${rows.length})</small></h1>
+    <form class="filters" id="flt"><input name="s" value="${e(qs.get('s')||'')}" placeholder="Axtar: DQN, FİN, telefon...">
+      <select name="status"><option value="">Bütün statuslar</option>${Object.entries(STATUSES).filter(([k]) => !HIDDEN_ST.includes(k)).map(([k,[t]]) => `<option value="${k}" ${st===k?'selected':''}>${t}</option>`).join('')}</select>
+      ${isF(u) ? `<select name="who"><option value="">Hamı</option>${people.map(p => `<option value="${p.id}" ${who===p.id?'selected':''}>${'— '.repeat(Math.max(0,p.depth-u.depth))}${e(p.name)}</option>`).join('')}</select>` : ''}
+      <input type="date" name="from" value="${e(from)}"><input type="date" name="to" value="${e(to)}">
+      <button class="btn">Süz</button> <a href="#${done ? 'done' : 'docs'}">Sıfırla</a>${isF(u) ? ' <button type="button" class="btn xl" id="xl">⬇ Excel ixrac</button>' : ''}</form>
+    <div class="card">${docTable(rows)}</div>`);
+  $('#flt').onsubmit = ev => { ev.preventDefault(); const p = new URLSearchParams();
+    for (const [k,v] of new FormData(ev.target)) if (v) p.set(k, v); go((done ? '#done?' : '#docs?') + p); };
+  if (isF(u)) $('#xl').onclick = () => exportXlsx(rows);
+}
+
+function pNew(u, qs){
+  const ed = qs && qs.get && qs.get('edit') ? S.docs.find(x => x.id === +qs.get('edit') && x.user_id === u.id) : null;
+  const types = [...new Set(['İcbari sığorta','Könüllü sığorta','KASKO','Əmlak sığortası','Müqavilə','Ərizə', ...S.docs.map(d=>d.doc_type).filter(Boolean)])];
+  shell(u, 'new', `<h1>${ed ? '✏ Düzəlt və yenidən göndər — #' + ed.id : 'Sənəd göndər'}</h1>${ed && ed.review_note ? `<div class="flash err">Səbəb: ${e(ed.review_note)}</div>` : ''}<p class="muted">${isF(u) ? 'Sənəd sizin siyahınıza əlavə olunacaq.' : 'Göndərdiyiniz sənəd birbaşa qurucuya düşür.'}</p><div id="err"></div>
+    <form class="card form" id="f">
+      <div class="row"><label>DQN *<input name="dqn" required class="up" placeholder="99NR324" pattern="\\d{2}-?[A-Za-z]{2}-?\\d{3}" title="Format: 99NR324"></label>
+        <label>Texpasportun seriyası *<input name="texpasport" required class="up" placeholder="AB123456" pattern="[A-Za-z]{2}\\s?\\d{6}" title="2 hərf + 6 rəqəm, məs. AB123456"></label></div>
+      <div class="row"><label>FİN kod *<input name="fin" required class="up" maxlength="7" placeholder="5ABC12D" pattern="[A-Za-z0-9]{7}" title="7 simvol"></label>
+        <label>Doğum tarixi *<input type="date" name="birth" required max="${now().slice(0,10)}"></label></div>
+      <div class="row"><label>Şəxsiyyət vəsiqəsi *<span class="pair"><select name="id_ser" required><option>AZE</option><option>AA</option><option>AB</option></select>
+          <input name="id_no" required inputmode="numeric" pattern="\\d{6,9}" placeholder="12345678" title="Yalnız rəqəm"></span></label>
+        <label>Sürücülük vəsiqəsi (prava) *<span class="pair"><select name="dl_ser" required>${['AB','AC','AD','AE','AA','BA'].map(x=>`<option>${x}</option>`).join('')}</select>
+          <input name="dl_no" required inputmode="numeric" pattern="\\d{6}" placeholder="123456" title="6 rəqəm"></span></label></div>
+      <div class="row"><label>Telefon nömrəsi *<span class="pair"><select name="op" required><option value="">Kod</option>${['010','050','051','055','060','070','077','099'].map(x=>`<option>${x}</option>`).join('')}</select>
+          <input name="phone_no" required inputmode="numeric" maxlength="7" pattern="\\d{7}" placeholder="1234567" title="7 rəqəm"></span></label>
+        <label>Sənəd növü<input name="doc_type" list="types"><datalist id="types">${types.map(t=>`<option value="${e(t)}">`).join('')}</datalist></label></div>
+      <label>Qeyd<textarea name="note" rows="3"></textarea></label>
+      <label class="drop">Fayllar (şəkil, PDF, Word, Excel — hər biri max ${MAX_MB} MB)
+        <input type="file" name="files" multiple accept="${ALLOWED.map(x=>'.'+x).join(',')}" id="fi"><span id="fl" class="muted">Telefondan birbaşa şəkil çəkə bilərsiniz</span></label>
+      <button class="btn wide">Göndər ↑</button></form>`);
+  $('#fi').onchange = ev => $('#fl').textContent = [...ev.target.files].map(f=>f.name).join(', ');
+  if (ed) { // köhnə məlumatları doldur
+    const F = $('#f'), sn = v => { const m = (v || '').match(/^([A-Z]+)(\d+)$/); return m ? [m[1], m[2]] : ['', v || '']; };
+    const [is, ino] = sn(ed.id_card), [ds, dno] = sn(ed.license), [op, pn] = (ed.customer_phone || ' ').split(' ');
+    Object.entries({ dqn: ed.dqn, texpasport: ed.texpasport, fin: ed.fin, birth: ed.birth, id_ser: is, id_no: ino, dl_ser: ds, dl_no: dno, op, phone_no: pn, doc_type: ed.doc_type, note: ed.note })
+      .forEach(([k, v]) => { if (F[k] && v) F[k].value = v; });
+    F.querySelector('button.btn').textContent = 'Düzəlt və yenidən göndər ↑';
+  }
+  $('#f').onsubmit = async ev => { ev.preventDefault();
+    const f = new FormData(ev.target), files = [...$('#fi').files], err = m => $('#err').innerHTML = `<div class="flash err">${e(m)}</div>`;
+    for (const x of files) {
+      if (!ALLOWED.includes(x.name.split('.').pop().toLowerCase())) return err(`“${x.name}” — bu fayl növünə icazə yoxdur.`);
+      if (x.size > MAX_MB*1048576) return err(`“${x.name}” ${MAX_MB} MB-dan böyükdür.`);
+    }
+    const up = k => f.get(k).trim().toUpperCase().replace(/\s+/g, '');
+    const dqn = up('dqn').replace(/-/g, '');
+    if (ed) { // mövcud sənədi yenilə → yenidən "Yeni"
+      Object.assign(ed, { title: dqn + (f.get('doc_type').trim() ? ' — ' + f.get('doc_type').trim() : ''), dqn, texpasport:up('texpasport'), fin:up('fin'), birth:f.get('birth'),
+        id_card:f.get('id_ser') + up('id_no'), license:f.get('dl_ser') + up('dl_no'), doc_type:f.get('doc_type').trim(), customer_phone:`${f.get('op')} ${up('phone_no')}`,
+        note:f.get('note').trim(), status:'yeni', review_note:'', ver:(ed.ver || 0) + 1 });
+      for (const x of files) {
+        const data = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(x); });
+        S.files.push({ id:nid('f'), document_id:ed.id, name:x.name, mime:x.type, size:x.size, data });
+      }
+      logAdd(ed.id, u.id, 'düzəltdi və yenidən göndərdi');
+      if (!save()) { S = load(); return; }
+      flash('Düzəldildi və yenidən göndərildi.'); return go('#doc/' + ed.id);
+    }
+    const id = nid('d');
+    S.docs.push({ id, user_id:u.id, path:u.path, title: dqn + (f.get('doc_type').trim() ? ' — ' + f.get('doc_type').trim() : ''),
+      dqn, texpasport:up('texpasport'), fin:up('fin'), birth:f.get('birth'), id_card:f.get('id_ser') + up('id_no'), license:f.get('dl_ser') + up('dl_no'),
+      doc_type:f.get('doc_type').trim(), customer_name:'',
+      customer_phone:`${f.get('op')} ${up('phone_no')}`, amount:null, note:f.get('note').trim(), status:'yeni',
+      reviewed_by:null, review_note:'', created_at:now() });
+    for (const x of files) {
+      const data = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(x); });
+      S.files.push({ id:nid('f'), document_id:id, name:x.name, mime:x.type, size:x.size, data });
+    }
+    logAdd(id, u.id, 'göndərdi');
+    if (!save()) { S = load(); return; }
+    flash(isF(u) ? 'Sənəd əlavə edildi.' : 'Sənəd göndərildi — qurucuya düşdü.'); go('#doc/' + id); };
+}
+
+function pDoc(u, id){
+  const d = S.docs.find(x => x.id === +id);
+  if (!d || !canSee(u, d)) return shell(u, '', '<h1>Tapılmadı</h1><a href="#docs">← Sənədlər</a>');
+  if (d.isb_code && d.user_id === u.id && !d.code_seen) { d.code_seen = true; save(); }
+  const files = S.files.filter(f => f.document_id === d.id), log = S.log.filter(l => l.document_id === d.id);
+  // Hər sətrin sağında kiçik kopyala düyməsi (cv = kopyalanacaq dəyər)
+  const kv = (k, v, cv) => v ? `<dt>${k}</dt><dd><span class="kvv">${v}</span>${cv != null && cv !== '' ? `<button type="button" class="cpb" data-v="${e(cv)}" title="Kopyala">📋</button>` : ''}</dd>` : '';
+  const sn = v => { const m = (v || '').match(/^([A-Z]+)(\d+)$/); return m ? [m[1], m[2]] : [v || '', '']; };
+  const [dlS, dlN] = sn(d.license), ph = (d.customer_phone || '').replace(/\D/g, ''), birth = d.birth ? d.birth.split('-').reverse().join('.') : '';
+  shell(u, '', `<a href="#docs">← Sənədlər</a><h1>#${d.id} ${e(d.title)} ${badge(d.status)}</h1>${isF(u) ? `<p class="muted">Yol: ${chain(d.path)}</p>` : ""}
+    <div class="grid2"><div class="card"><dl class="kv">${kv('Göndərən', e(U(d.user_id)?.name), U(d.user_id)?.name)}${kv('Tarix', d.created_at, d.created_at)}
+      ${kv('DQN', e(d.dqn), d.dqn)}${kv('Texpasport', e(d.texpasport), d.texpasport)}${kv('FİN', e(d.fin), d.fin)}
+      ${kv('Vəsiqə', e(d.id_card), d.id_card)}${kv('Doğum tarixi', e(birth), birth)}
+      ${kv('Prava seriyası', e(dlS), dlS)}${kv('Prava nömrəsi', e(dlN), dlN)}${kv('Növ', e(d.doc_type), d.doc_type)}
+      ${kv('Müştəri', e(d.customer_name), d.customer_name)}
+      ${kv('Telefon kodu', e(ph.slice(1, 3)), ph.slice(1, 3))}${kv('Telefon nömrəsi', ph ? `<a href="tel:+994${e(ph.replace(/^0/, ''))}">${e(ph.slice(3))}</a>` : '', ph.slice(3))}
+      ${kv('Məbləğ', d.amount != null ? d.amount.toFixed(2) + ' AZN' : '')}${kv('<b style="color:#16a34a">İSB kodu</b>', d.isb_code ? `<b style="color:#16a34a;font-size:1.1em">${e(d.isb_code)}</b>` : '', d.isb_code)}</dl>
+      ${d.note ? `<p class="note">${e(d.note).replace(/\n/g,'<br>')}</p>` : ''}
+      <button class="btn ghost sm" id="cp">📋 Hamısını mətn kimi kopyala</button>
+      <h3>Fayllar (${files.length})</h3><div class="files">${files.map(f => `<a class="file" href="#" data-f="${f.id}">
+        ${f.mime.startsWith('image/') ? `<img src="${f.data}" alt="">` : `<span class="ext">${e(f.name.split('.').pop().toUpperCase())}</span>`}
+        <small>${e(f.name)}<br>${Math.round(f.size/1024)} KB</small></a>`).join('')}</div></div>
+    <div>${canReview(u, d) ? `<form class="card" id="rv"><h2>Qərar</h2><div class="seg">${Object.entries(STATUSES).map(([k,[t,c]]) =>
+        `<label${HIDDEN_ST.includes(k) ? ' style="visibility:hidden;pointer-events:none"' : ''}><input type="radio" name="status" value="${k}" ${d.status===k?'checked':''} ${HIDDEN_ST.includes(k) ? 'disabled' : ''}><span style="--c:${c}">${t}</span></label>`).join('')}</div>
+        <label>Qeyd (agent görəcək)<textarea name="note" rows="2">${e(d.review_note)}</textarea></label><button class="btn">Yadda saxla</button></form>`
+      : d.review_note ? `<div class="card"${d.status === 'redd' ? ' style="border:2px solid #dc2626;background:#fef2f2"' : ''}><h2>${d.status === 'redd' ? '⚠ Geri qaytarıldı' : 'Rəhbərin qeydi'}</h2><p style="white-space:pre-wrap;font-family:inherit;tab-size:4">${e(d.review_note)}</p>${d.status === 'redd' && d.user_id === u.id ? `<a class="btn" href="#new?edit=${d.id}">✏ Düzəlt və yenidən göndər</a>` : ''}</div>` : ''}
+      <div class="card"><h2>Tarixçə</h2><ul class="log">${log.map(l => `<li><b>${e(U(l.user_id)?.name)}</b> — ${e(l.action)} <small class="muted">${l.created_at}</small>${l.note?'<br>'+e(l.note):''}</li>`).join('')}</ul>
+        <form class="inline" id="cm"><input name="note" placeholder="Şərh yaz..." required><button class="btn sm">Göndər</button></form></div>
+      ${u.role === 'founder' ? '<button class="btn danger sm" id="del">Sənədi sil</button>' : ''}</div></div>`);
+  document.querySelectorAll('.cpb').forEach(c => c.onclick = () => {
+    const v = c.dataset.v, done = () => { document.querySelectorAll('.cpb.ok').forEach(x => { x.classList.remove('ok'); x.textContent = '📋'; }); c.classList.add('ok'); c.textContent = '✓'; };
+    (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(done, () => {
+      const t = document.createElement('textarea'); t.value = v; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); done(); });
+  });
+  $('#cp').onclick = () => { const t = [...document.querySelectorAll('.kv dt')].map(dt => `${dt.textContent}: ${dt.nextElementSibling.querySelector('.kvv').textContent}`).join('\n');
+    navigator.clipboard.writeText(t).then(() => { $('#cp').textContent = '✓ Kopyalandı'; }, () => prompt('Kopyalayın:', t)); };
+  document.querySelectorAll('[data-f]').forEach(a => a.onclick = ev => { ev.preventDefault();
+    const f = S.files.find(x => x.id === +a.dataset.f), l = document.createElement('a'); l.href = f.data; l.download = f.name; l.click(); });
+  if ($('#rv')) $('#rv').onsubmit = ev => { ev.preventDefault(); const f = new FormData(ev.target);
+    d.status = f.get('status'); d.review_note = f.get('note').trim(); d.reviewed_by = u.id;
+    logAdd(d.id, u.id, STATUSES[d.status][0], d.review_note || null); save(); flash('Status yeniləndi.'); render(); };
+  $('#cm').onsubmit = ev => { ev.preventDefault(); logAdd(d.id, u.id, 'şərh', new FormData(ev.target).get('note').trim()); save(); render(); };
+  if ($('#del')) $('#del').onclick = () => { if (!confirm('Sənəd və faylları birdəfəlik silinsin?')) return;
+    S.docs = S.docs.filter(x => x.id !== d.id); S.files = S.files.filter(x => x.document_id !== d.id); S.log = S.log.filter(x => x.document_id !== d.id);
+    save(); flash('Sənəd silindi.'); go('#docs'); };
+}
+
+// Telefon: "055 1234567" -> "994551234567"
+const intl = ph => { const d = (ph || '').replace(/\D/g, ''); return d ? '994' + d.replace(/^994/, '').replace(/^0/, '') : ''; };
+const codeOk = c => /^[A-Z0-9]{3,12}$/.test(c);
+const codeTaken = (c, exceptId) => S.users.some(x => x.id !== exceptId && ((x.code || '').toUpperCase() === c || (x.username || '').toUpperCase() === c));
+const phoneFields = (ph = '') => { const [op = '', no = ''] = ph.split(' ');
+  return `<span class="pair"><select name="op"><option value="">Kod</option>${['010','050','051','055','060','070','077','099'].map(x=>`<option ${x===op?'selected':''}>${x}</option>`).join('')}</select>
+    <input name="phone_no" inputmode="numeric" maxlength="7" pattern="\\d{7}" placeholder="1234567" value="${e(no)}"></span>`; };
+const readPhone = f => f.get('op') && f.get('phone_no') ? `${f.get('op')} ${f.get('phone_no').trim()}` : '';
+let sendInfo = null; // yaradılan/dəyişən giriş məlumatı — göndərmə kartı üçün
+
+function sendCard(){
+  if (!sendInfo) return ''; const s = sendInfo; sendInfo = null;
+  const msg = `Agent Şəbəkəsi\nAd: ${s.name}\nKod: ${s.code}${s.pw ? `\nParol: ${s.pw}` : ''}\nGiriş: kod və parolla daxil olun.`;
+  const n = intl(s.phone);
+  return `<div class="card send"><h2>${e(s.title)}</h2><p><b>${e(s.name)}</b> — Kod: <b class="big">${e(s.code)}</b>${s.pw ? ` · Parol: <b class="big">${e(s.pw)}</b>` : ''}</p>
+    ${n ? `<p class="muted">Nömrəyə göndər: ${e(s.phone)}</p><div class="row" style="flex-direction:row">
+      <a class="btn wa" target="_blank" href="https://wa.me/${n}?text=${encodeURIComponent(msg)}">WhatsApp ilə göndər</a>
+      <a class="btn" href="sms:+${n}?body=${encodeURIComponent(msg)}">SMS ilə göndər</a></div>`
+      : '<p class="flash err">Bu istifadəçinin telefon nömrəsi yoxdur — göndərmək üçün nömrə əlavə edin.</p>'}</div>`;
+}
+
+function pTeam(u){
+  const users = S.users.filter(x => inBranch(u, x)), docs = branchDocs(u);
+  const node = x => {
+    const kids = users.filter(k => k.parent_id === x.id), mine = docs.filter(d => d.user_id === x.id);
+    return `<li><div class="node${x.active?'':' off'}"><span class="role r-${x.role}">${roleName(x)}</span> <b>${e(x.name)}</b>
+      <small class="muted">Kod: <b>${e(x.code)}</b>${x.phone ? ' · ' + e(x.phone) : ''}</small>
+      ${isF(u) ? `<a class="pill" href="#docs?who=${x.id}">${mine.length} sənəd · ${mine.filter(d=>d.status==='tesdiq').length} ✓</a>` : ''}
+      ${kids.length ? `<small class="muted">${kids.length} alt</small>` : ''}
+      <span class="acts">${x.active ? `<button class="link" data-add="${x.id}">+ alt əlavə et</button>` : ''}
+      ${x.id !== u.id ? `<button class="link" data-ed="${x.id}">kod / parol</button><button class="link" data-tg="${x.id}">${x.active?'deaktiv et':'aktiv et'}</button>` : ''}</span></div>
+      ${kids.length ? `<ul>${kids.map(node).join('')}</ul>` : ''}</li>`;
+  };
+  shell(u, 'team', `${sendCard()}<h1>Komanda ağacı</h1><p class="muted">Siz öz budağınızdakı hər kəsi görür və idarə edirsiniz. Hər kəs öz altına yeni agent aça bilər.</p>
+    <div class="card tree"><ul>${node(u)}</ul></div>
+    <dialog id="dAdd"><form id="fAdd"><h2 id="tAdd"></h2><div id="eAdd"></div>
+      <label>Ad Soyad<input name="name" required></label>
+      <label>Telefon nömrəsi * (kod bu nömrəyə göndəriləcək)${phoneFields()}</label>
+      <div class="row"><label>Giriş kodu<input name="code" required class="up" maxlength="12" placeholder="məs. 123"></label>
+        <label>Parol<input name="password" required minlength="3"></label></div>
+      <div class="row"><button class="btn">Yarat</button><button type="button" class="btn ghost" onclick="dAdd.close()">Ləğv et</button></div></form></dialog>
+    <dialog id="dEd"><form id="fEd"><h2 id="tEd"></h2><div id="eEd"></div>
+      <label>Telefon nömrəsi${phoneFields()}</label>
+      <label>Yeni giriş kodu<input name="code" required class="up" maxlength="12"></label>
+      <label>Yeni parol <small class="muted">(boş qalsa, dəyişmir)</small><input name="password" minlength="3"></label>
+      <div class="row"><button class="btn">Yadda saxla</button><button type="button" class="btn ghost" onclick="dEd.close()">Ləğv et</button></div></form></dialog>`);
+  const gen = () => String(100 + Math.floor(Math.random()*900));
+  let target = null;
+  document.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { target = U(b.dataset.add);
+    $('#tAdd').textContent = `“${target.name}” altına yeni ${ROLES[childRole(target)]}`; $('#eAdd').innerHTML = '';
+    $('#fAdd').reset(); $('#fAdd').op.required = $('#fAdd').phone_no.required = true;
+    $('#fAdd').code.value = newCode(); $('#fAdd').password.value = gen(); $('#dAdd').showModal(); });
+  document.querySelectorAll('[data-ed]').forEach(b => b.onclick = () => { target = U(b.dataset.ed);
+    $('#tEd').textContent = target.name + ' — kod / parol'; $('#eEd').innerHTML = '';
+    $('#fEd').reset(); const [op = '', no = ''] = (target.phone || '').split(' '); $('#fEd').op.value = op; $('#fEd').phone_no.value = no;
+    $('#fEd').code.value = target.code; $('#dEd').showModal(); });
+  document.querySelectorAll('[data-tg]').forEach(b => b.onclick = () => { const t = U(b.dataset.tg); t.active = !t.active; save();
+    flash(t.name + (t.active ? ' aktiv edildi.' : ' deaktiv edildi (daxil ola bilməz).')); render(); });
+  $('#fAdd').onsubmit = async ev => { ev.preventDefault(); const f = new FormData(ev.target), code = f.get('code').trim().toUpperCase(), err = m => $('#eAdd').innerHTML = `<div class="flash err">${m}</div>`;
+    if (!codeOk(code)) return err('Kod 3–12 simvol olmalıdır (rəqəm və ya hərf).');
+    if (codeTaken(code, 0)) return err('Bu kod artıq başqasındadır.');
+    const id = nid('u'), pw = f.get('password'), phone = readPhone(f);
+    S.users.push({ id, parent_id:target.id, role:childRole(target), name:f.get('name').trim(), code, pw:await hash(pw),
+      phone, path:target.path + id + '/', depth:target.depth + 1, active:true, created_at:now() });
+    save(); sendInfo = { title:`${ROLES[childRole(target)]} yaradıldı`, name:f.get('name').trim(), code, pw, phone }; render(); };
+  $('#fEd').onsubmit = async ev => { ev.preventDefault(); const f = new FormData(ev.target), code = f.get('code').trim().toUpperCase(), pw = f.get('password'), err = m => $('#eEd').innerHTML = `<div class="flash err">${m}</div>`;
+    if (!codeOk(code)) return err('Kod 3–12 simvol olmalıdır (rəqəm və ya hərf).');
+    if (codeTaken(code, target.id)) return err('Bu kod artıq başqasındadır.');
+    target.code = code; target.phone = readPhone(f) || target.phone; if (pw) target.pw = await hash(pw);
+    save(); sendInfo = { title:'Giriş məlumatı dəyişdi', name:target.name, code, pw, phone:target.phone }; render(); };
+}
+
+function pProfile(u){
+  shell(u, 'profile', `<div class="narrow">${sendCard()}<div class="card" style="position:relative"><label title="Şəkli dəyiş" style="position:absolute;top:14px;right:14px;margin:0;cursor:pointer">${u.avatar ? `<img id="av" src="${u.avatar}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid #ddd">` : `<div id="av" style="width:72px;height:72px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:30px;color:#6b7280">${e((u.name||'?').trim()[0]||'?').toUpperCase()}</div>`}<input type="file" id="avIn" accept="image/*" style="display:none"></label><h1>${e(u.name)}</h1><p class="muted">${roleName(u)} · Giriş kodu: <b>${e(u.code)}</b><br>${chain(u.path)}</p>
+    <h2>Kod / telefon / parol</h2><form id="f"><div id="err"></div>
+    <label>Telefon nömrəsi${phoneFields(u.phone)}</label>
+    <label>Giriş kodu<input name="code" required class="up" maxlength="12" value="${e(u.code)}"></label>
+    <label>Yeni parol <small class="muted">(boş qalsa, dəyişmir)</small><input type="password" name="new" minlength="3"></label>
+    <label>Hazırkı parol * (təsdiq üçün)<input type="password" name="old" required></label>
+    <button class="btn">Yadda saxla</button></form>
+    <h2 style="margin-top:22px">Profil şəkli</h2><p class="muted" style="margin:4px 0 8px">Yuxarı sağdakı dairəyə bas və ya buradan seç.</p>
+    <input type="file" id="avIn2" accept="image/*">${u.avatar ? ` <button type="button" class="btn" id="avDel" style="background:#6b7280">Şəkli sil</button>` : ''}
+    <h2 style="margin-top:22px">Arxa fon</h2><p class="muted" style="margin:4px 0 8px">Şablon seç və ya öz şəklini yüklə.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${Object.entries(BGS).map(([k, [n, v]]) => `<div class="bgT" data-k="${k}" title="${n}" style="cursor:pointer;height:58px;border-radius:10px;border:3px solid ${(!u.bgImg && (u.bg || 'none') === k) ? '#1d4ed8' : '#e5e7eb'};background:${v || '#f3f4f6'};display:flex;align-items:flex-end;padding:4px 6px;font-size:12px;color:#111"><span style="background:#fffc;border-radius:6px;padding:1px 6px">${n}</span></div>`).join('')}</div>
+    <p style="margin:10px 0 4px"><b>Öz şəklin:</b></p><input type="file" id="bgIn" accept="image/*">${u.bgImg ? ` <button type="button" class="btn" id="bgDel" style="background:#6b7280">Öz fonu sil</button>` : ''}</div></div>`);
+  document.querySelectorAll('.bgT').forEach(t => t.onclick = () => { u.bg = t.dataset.k; delete u.bgImg; save(); flash('Arxa fon dəyişdi.'); render(); });
+  $('#bgIn').onchange = ev => { const file = ev.target.files[0]; if (!file || !/^image\//.test(file.type)) return;
+    const img = new Image(), rd = new FileReader();
+    rd.onload = () => { img.onload = () => { const mx = 1600, k = Math.min(1, mx / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      u.bgImg = c.toDataURL('image/jpeg', 0.72); if (save()) flash('Arxa fon şəkli qoyuldu.'); else { delete u.bgImg; save(); flash('Şəkil çox böyükdür, başqasını seçin.', 'err'); }
+      render(); }; img.src = rd.result; }; rd.readAsDataURL(file); };
+  if ($('#bgDel')) $('#bgDel').onclick = () => { delete u.bgImg; save(); flash('Öz fon silindi.'); render(); };
+  const setAv = file => { if (!file) return; if (!/^image\//.test(file.type)) return flash('Yalnız şəkil faylı seçin.', 'err'), render();
+    const img = new Image(), rd = new FileReader();
+    rd.onload = () => { img.onload = () => { const c = document.createElement('canvas'), z = 160, k = Math.max(z / img.width, z / img.height), w = img.width * k, h = img.height * k;
+      c.width = c.height = z; c.getContext('2d').drawImage(img, (z - w) / 2, (z - h) / 2, w, h);
+      u.avatar = c.toDataURL('image/jpeg', 0.85); save(); flash('Profil şəkli yeniləndi.'); render(); }; img.src = rd.result; };
+    rd.readAsDataURL(file); };
+  $('#avIn').onchange = ev => setAv(ev.target.files[0]);
+  $('#avIn2').onchange = ev => setAv(ev.target.files[0]);
+  if ($('#avDel')) $('#avDel').onclick = () => { delete u.avatar; save(); flash('Şəkil silindi.'); render(); };
+  $('#f').onsubmit = async ev => { ev.preventDefault(); const f = new FormData(ev.target), code = f.get('code').trim().toUpperCase(), err = m => $('#err').innerHTML = `<div class="flash err">${m}</div>`;
+    if (await hash(f.get('old')) !== u.pw) return err('Hazırkı parol səhvdir.');
+    if (!codeOk(code)) return err('Kod 3–12 simvol olmalıdır (rəqəm və ya hərf).');
+    if (codeTaken(code, u.id)) return err('Bu kod artıq başqasındadır.');
+    const changed = code !== u.code || f.get('new');
+    u.code = code; u.phone = readPhone(f) || u.phone; if (f.get('new')) u.pw = await hash(f.get('new'));
+    save(); if (changed) sendInfo = { title:'Giriş məlumatınız dəyişdi', name:u.name, code, pw:f.get('new'), phone:u.phone }; else flash('Yadda saxlanıldı.'); render(); };
+}
+
+
+// ---------- EXCEL (.xlsx) İXRAC — yalnız qurucu ----------
+const splitSN = v => { const m = (v || '').match(/^([A-Z]+)(\d+)$/); return m ? [m[1], m[2]] : [v || '', '']; };
+const splitPh = v => { const d = (v || '').replace(/\D/g, ''); return d ? [d.slice(0, 3), d.slice(3)] : ['', '']; };
+function exportXlsx(rows){
+  const head = ['#','DQN','Texpasport','FİN','Şəxsiyyət vəsiqəsi','Doğum tarixi','Prava seriya','Prava nömrə','Tel kod','Tel nömrə','Sənəd növü','Qeyd','Göndərən','Rolu','Status','Tarix','Rəhbər qeydi','Fayl sayı'];
+  const data = rows.map(d => { const s = U(d.user_id); return [d.id, d.dqn || d.title, d.texpasport, d.fin, d.id_card,
+    d.birth ? d.birth.split('-').reverse().join('.') : '', ...splitSN(d.license), ...splitPh(d.customer_phone), d.doc_type, d.note, s?.name, s ? roleName(s) : '',
+    STATUSES[d.status]?.[0], d.created_at, d.review_note, S.files.filter(f => f.document_id === d.id).length]; });
+  const x = v => String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+  const col = i => { let s = ''; i++; while (i) { s = String.fromCharCode(65 + (i - 1) % 26) + s; i = Math.floor((i - 1) / 26); } return s; };
+  const row = (r, ri, st) => `<row r="${ri}">${r.map((v, ci) => typeof v === 'number'
+    ? `<c r="${col(ci)}${ri}"${st}><v>${v}</v></c>` : `<c r="${col(ci)}${ri}" t="inlineStr"${st}><is><t xml:space="preserve">${x(v)}</t></is></c>`).join('')}</row>`;
+  const widths = [6,12,14,11,16,13,8,11,8,11,16,30,20,10,13,17,25,9];
+  const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+<cols>${widths.map((w, i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols>
+<sheetData>${row(head, 1, ' s="1"')}${data.map((r, i) => row(r, i + 2, '')).join('')}</sheetData>
+<autoFilter ref="A1:${col(head.length - 1)}${data.length + 1}"/></worksheet>`;
+  const files = {
+    '[Content_Types].xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`,
+    '_rels/.rels': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
+    'xl/workbook.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sənədlər" sheetId="1" r:id="rId1"/></sheets><definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">'Sənədlər'!$A$1:$${col(head.length - 1)}$${data.length + 1}</definedName></definedNames></workbook>`,
+    'xl/_rels/workbook.xml.rels': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`,
+    'xl/styles.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1D4ED8"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="2"><xf/><xf fontId="1" fillId="2" applyFont="1" applyFill="1"/></cellXfs></styleSheet>`,
+    'xl/worksheets/sheet1.xml': sheet,
+  };
+  const blob = zipStore(files), a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `senedler-${now().slice(0,10)}.xlsx`; a.click();
+}
+// Sadə ZIP (sıxılmadan) — kitabxanasız
+function zipStore(files){
+  const enc = new TextEncoder(), crcT = new Uint32Array(256).map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+  const crc = b => { let c = 0xFFFFFFFF; for (const x of b) c = crcT[(c ^ x) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  const parts = [], central = []; let off = 0;
+  for (const [name, txt] of Object.entries(files)) {
+    const nb = enc.encode(name), db = enc.encode(txt), c = crc(db);
+    const h = new DataView(new ArrayBuffer(30)); h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true);
+    h.setUint32(14, c, true); h.setUint32(18, db.length, true); h.setUint32(22, db.length, true); h.setUint16(26, nb.length, true);
+    parts.push(h, nb, db);
+    const ch = new DataView(new ArrayBuffer(46)); ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+    ch.setUint32(16, c, true); ch.setUint32(20, db.length, true); ch.setUint32(24, db.length, true); ch.setUint16(28, nb.length, true); ch.setUint32(42, off, true);
+    central.push(ch, nb); off += 30 + nb.length + db.length;
+  }
+  const csize = central.reduce((s, p) => s + p.byteLength, 0), end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, Object.keys(files).length, true); end.setUint16(10, Object.keys(files).length, true);
+  end.setUint32(12, csize, true); end.setUint32(16, off, true);
+  return new Blob([...parts, ...central, end], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+
+// ---------- EHTİYAT NÜSXƏ ----------
+function exportJSON(){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(S)], { type:'application/json' }));
+  a.download = `agentnet-${now().slice(0,10)}.json`; a.click();
+}
+function importJSON(){
+  const i = document.createElement('input'); i.type = 'file'; i.accept = '.json';
+  i.onchange = async () => { try { const d = JSON.parse(await i.files[0].text());
+      if (!Array.isArray(d.users) || !d.seq) throw 0;
+      if (S.users.length && !confirm('Mövcud məlumat əvəz olunsun?')) return;
+      S = d; save(); xhr('POST', 'a=logout'); S = setState({ hasUsers:true, state:blank() }); flash('Məlumat bərpa edildi. Daxil olun.'); go('#login');
+    } catch(e){ alert('Fayl düzgün deyil.'); } };
+  i.click();
+}
+
+// ---------- MARŞRUT ----------
+function render(){
+  const [path, q] = location.hash.slice(1).split('?'), qs = new URLSearchParams(q || ''), [page, arg] = (path || 'home').split('/');
+  applyBg(null);
+  if (!SRV.hasUsers && !S.users.length) return pSetup();
+  if (page === 'logout') { xhr('POST', 'a=logout'); S = setState({ hasUsers:true, state:blank() }); return go('#login'); }
+  const u = me();
+  if (!u) return pLogin();
+  window.scrollTo(0, 0);
+  ({ home:pHome, docs:pDocs, done:(u, q) => pDocs(u, q, true), new:pNew, doc:pDoc, team:pTeam, profile:pProfile }[page] || pHome)(u, page === 'doc' ? arg : qs);
+}
+// Bir dəfəlik: qurucunun girişi Kod ADMIN / Parol 123
+(async () => {
+  const f = S.users.find(u => u.role === 'founder');
+  if (f && !S.founderPreset && !S.users.some(u => u.id !== f.id && (u.code || '').toUpperCase() === 'ADMIN')) {
+    f.code = 'ADMIN'; f.pw = await hash('123'); f.active = true; S.founderPreset = 1; save();
+  }
+  addEventListener('hashchange', render);
+  render();
+})();
+</script></body></html>
