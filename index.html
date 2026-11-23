@@ -288,7 +288,7 @@ function pNew(u, qs){
         <label>Doğum tarixi *<input type="date" name="birth" required max="${now().slice(0,10)}"></label></div>
       <div class="row"><label>Şəxsiyyət vəsiqəsi *<span class="pair"><select name="id_ser" required><option>AZE</option><option>AA</option><option>AB</option></select>
           <input name="id_no" required inputmode="numeric" pattern="\\d{6,9}" placeholder="12345678" title="Yalnız rəqəm"></span></label>
-        <label>Sürücülük vəsiqəsi (prava) *<span class="pair"><select name="dl_ser" required>${['AB','AC','AD','AE','AA','BA'].map(x=>`<option>${x}</option>`).join('')}</select>
+        <label>Sürücülük vəsiqəsi (prava) *<span class="pair"><input name="dl_ser" required class="up" maxlength="3" placeholder="AB" pattern="[A-Za-z]{2,3}" title="Seriya: 2-3 hərf, məs. AB, AC" style="width:90px;flex:none;margin:0;text-transform:uppercase">
           <input name="dl_no" required inputmode="numeric" pattern="\\d{6}" placeholder="123456" title="6 rəqəm"></span></label></div>
       <div class="row"><label>Telefon nömrəsi *<span class="pair"><select name="op" required><option value="">Kod</option>${['010','050','051','055','060','070','077','099'].map(x=>`<option>${x}</option>`).join('')}</select>
           <input name="phone_no" required inputmode="numeric" maxlength="7" pattern="\\d{7}" placeholder="1234567" title="7 rəqəm"></span></label>
@@ -315,7 +315,7 @@ function pNew(u, qs){
     const dqn = up('dqn').replace(/-/g, '');
     if (ed) { // mövcud sənədi yenilə → yenidən "Yeni"
       Object.assign(ed, { title: dqn + (f.get('doc_type').trim() ? ' — ' + f.get('doc_type').trim() : ''), dqn, texpasport:up('texpasport'), fin:up('fin'), birth:f.get('birth'),
-        id_card:f.get('id_ser') + up('id_no'), license:f.get('dl_ser') + up('dl_no'), doc_type:f.get('doc_type').trim(), customer_phone:`${f.get('op')} ${up('phone_no')}`,
+        id_card:f.get('id_ser') + up('id_no'), license:up('dl_ser') + up('dl_no'), doc_type:f.get('doc_type').trim(), customer_phone:`${f.get('op')} ${up('phone_no')}`,
         note:f.get('note').trim(), status:'yeni', review_note:'', ver:(ed.ver || 0) + 1 });
       for (const x of files) {
         const data = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(x); });
@@ -327,7 +327,7 @@ function pNew(u, qs){
     }
     const id = nid('d');
     S.docs.push({ id, user_id:u.id, path:u.path, title: dqn + (f.get('doc_type').trim() ? ' — ' + f.get('doc_type').trim() : ''),
-      dqn, texpasport:up('texpasport'), fin:up('fin'), birth:f.get('birth'), id_card:f.get('id_ser') + up('id_no'), license:f.get('dl_ser') + up('dl_no'),
+      dqn, texpasport:up('texpasport'), fin:up('fin'), birth:f.get('birth'), id_card:f.get('id_ser') + up('id_no'), license:up('dl_ser') + up('dl_no'),
       doc_type:f.get('doc_type').trim(), customer_name:'',
       customer_phone:`${f.get('op')} ${up('phone_no')}`, amount:null, note:f.get('note').trim(), status:'yeni',
       reviewed_by:null, review_note:'', created_at:now() });
