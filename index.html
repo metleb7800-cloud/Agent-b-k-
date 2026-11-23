@@ -144,7 +144,13 @@ const badge = s => { const [t,c] = STATUSES[s]; return `<span class="badge" styl
 const branchDocs = u => S.docs.filter(d => canSee(u, d)).sort((a,b) => b.id - a.id);
 const logAdd = (doc, uid, action, note=null) => S.log.push({ id:nid('l'), document_id:doc, user_id:uid, action, note, created_at:now() });
 
+const DEFAULT_AV = 'data:image/jpeg;base64,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';
+const avOf = u => (u && u.avatar) || DEFAULT_AV;
 let flashMsg = null;
+// Düymələri yerindən oynatmayan bildiriş (ekranın aşağı sağında, 3 san.)
+function toast(t){ const d = document.createElement('div'); d.textContent = t;
+  d.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:9999;background:#16a34a;color:#fff;padding:10px 16px;border-radius:10px;box-shadow:0 6px 20px #0003;font-weight:600;transition:opacity .4s';
+  document.body.appendChild(d); setTimeout(() => d.style.opacity = '0', 2600); setTimeout(() => d.remove(), 3100); }
 function flash(m, t='ok'){ flashMsg = [m, t]; }
 function go(h){ if (location.hash === h) render(); else location.hash = h; }
 const $ = s => document.querySelector(s);
@@ -177,9 +183,9 @@ function shell(u, page, body){
   const f = flashMsg; flashMsg = null;
   const a = (p, t) => `<a href="#${p}" class="${page===p?'on':''}">${t}</a>`;
   applyBg(u);
-  app().innerHTML = `<header class="top"><a class="brand" href="#home">Agent Şəbəkəsi</a>
+  app().innerHTML = `<header class="top"${u.hdrImg ? ` style="background:linear-gradient(90deg,#0f172abb,#0f172a66 40%,#0f172acc),url(${u.hdrImg}) center/cover no-repeat;text-shadow:0 1px 3px #000"` : ''}><a class="brand" href="#home">Agent Şəbəkəsi</a>
     <nav>${a('home','Panel')}${a('docs','Sənədlər'+(n?` <b class="dot">${n}</b>`:''))}${a('new','+ Sənəd göndər')}${a('team','Komanda')}${a('done','✓ Təsdiqlənənlər')}</nav>
-    <div class="who" style="position:relative">${u.avatar ? `<img src="${u.avatar}" alt="" style="position:absolute;right:100%;top:50%;transform:translateY(-50%);margin-right:8px;width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #fff">` : ''}${e(u.name)} <small>${roleName(u)}</small> <a href="#profile">Profil</a> · <a href="#logout">Çıxış</a></div></header>
+    <div class="who" style="position:relative">${true ? `<img src="${avOf(u)}" alt="" style="position:absolute;right:100%;top:50%;transform:translateY(-50%);margin-right:8px;width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #fff">` : ''}${e(u.name)} <small>${roleName(u)}</small> <a href="#profile">Profil</a> · <a href="#logout">Çıxış</a></div></header>
     <main>${f ? `<div class="flash ${f[1]}">${e(f[0])}</div>` : ''}${body}</main>`;
 }
 function docTable(rows){
@@ -239,6 +245,7 @@ function pHome(u){
 }
 
 function pDocs(u, qs, done = false){
+  const wait = done === 'wait' && isF(u); if (done === 'wait') done = false;
   const st = qs.get('status') || '', s = (qs.get('s') || '').toLowerCase(), who = +(qs.get('who') || 0), from = qs.get('from') || '', to = qs.get('to') || '';
   let rows = branchDocs(u);
   // Təsdiqlənənlər ayrıca bölmədədir; əsas siyahıda yalnız işlənməmiş sənədlər
@@ -248,16 +255,25 @@ function pDocs(u, qs, done = false){
   if (isF(u) && who && U(who)) rows = rows.filter(d => d.path.startsWith(U(who).path));
   if (from) rows = rows.filter(d => d.created_at.slice(0,10) >= from);
   if (to) rows = rows.filter(d => d.created_at.slice(0,10) <= to);
+  // Növbə: qurucuya sənədlər vaxt sırası ilə (ən birinci göndərilən) TƏK-TƏK çıxır, qalanları "Gözləmə"də yığılır
+  const fifo = arr => arr.slice().sort((a, b) => (a.created_at || '').localeCompare(b.created_at || '') || a.id - b.id);
+  const filtered = !!(st || s || who || from || to);
+  let waitN = 0;
+  if (isF(u) && !done) {
+    const q = fifo(rows.filter(d => d.status === 'yeni'));
+    if (wait) rows = [...q, ...rows.filter(d => d.status !== 'yeni')];
+    else if (!filtered) { waitN = Math.max(0, q.length - 1); rows = q.slice(0, 1); }
+  }
   const people = S.users.filter(x => inBranch(u,x)).sort((a,b) => a.path.localeCompare(b.path));
-  shell(u, done ? 'done' : 'docs', `<h1>${done ? '✓ Təsdiqlənənlər' : isF(u) ? 'Gələn sənədlər' : 'Mənim sənədlərim'} <small class="muted">(${rows.length})</small></h1>
+  shell(u, wait ? 'wait' : done ? 'done' : 'docs', `<h1>${wait ? '⏳ Gözləmədə' : done ? '✓ Təsdiqlənənlər' : isF(u) ? 'Gələn sənədlər' : 'Mənim sənədlərim'} <small class="muted">(${rows.length}${waitN ? ` · növbədə daha ${waitN}` : ''})</small>${isF(u) && !done ? (wait ? ' <a href="#docs" style="font-size:15px">← Növbəti sənəd</a>' : ' <a href="#wait" style="font-size:15px">⏳ Gözləmə</a>') : ''}</h1>
     <form class="filters" id="flt"><input name="s" value="${e(qs.get('s')||'')}" placeholder="Axtar: DQN, FİN, telefon...">
       <select name="status"><option value="">Bütün statuslar</option>${Object.entries(STATUSES).filter(([k]) => !HIDDEN_ST.includes(k)).map(([k,[t]]) => `<option value="${k}" ${st===k?'selected':''}>${t}</option>`).join('')}</select>
       ${isF(u) ? `<select name="who"><option value="">Hamı</option>${people.map(p => `<option value="${p.id}" ${who===p.id?'selected':''}>${'— '.repeat(Math.max(0,p.depth-u.depth))}${e(p.name)}</option>`).join('')}</select>` : ''}
       <input type="date" name="from" value="${e(from)}"><input type="date" name="to" value="${e(to)}">
-      <button class="btn">Süz</button> <a href="#${done ? 'done' : 'docs'}">Sıfırla</a>${isF(u) ? ' <button type="button" class="btn xl" id="xl">⬇ Excel ixrac</button>' : ''}</form>
+      <button class="btn">Süz</button> <a href="#${wait ? 'wait' : done ? 'done' : 'docs'}">Sıfırla</a>${isF(u) ? ' <button type="button" class="btn xl" id="xl">⬇ Excel ixrac</button>' : ''}</form>
     <div class="card">${docTable(rows)}</div>`);
   $('#flt').onsubmit = ev => { ev.preventDefault(); const p = new URLSearchParams();
-    for (const [k,v] of new FormData(ev.target)) if (v) p.set(k, v); go((done ? '#done?' : '#docs?') + p); };
+    for (const [k,v] of new FormData(ev.target)) if (v) p.set(k, v); go((wait ? '#wait?' : done ? '#done?' : '#docs?') + p); };
   if (isF(u)) $('#xl').onclick = () => exportXlsx(rows);
 }
 
@@ -307,7 +323,7 @@ function pNew(u, qs){
       }
       logAdd(ed.id, u.id, 'düzəltdi və yenidən göndərdi');
       if (!save()) { S = load(); return; }
-      flash('Düzəldildi və yenidən göndərildi.'); return go('#doc/' + ed.id);
+      toast('Düzəldildi və yenidən göndərildi.'); return go('#docs');
     }
     const id = nid('d');
     S.docs.push({ id, user_id:u.id, path:u.path, title: dqn + (f.get('doc_type').trim() ? ' — ' + f.get('doc_type').trim() : ''),
@@ -321,7 +337,7 @@ function pNew(u, qs){
     }
     logAdd(id, u.id, 'göndərdi');
     if (!save()) { S = load(); return; }
-    flash(isF(u) ? 'Sənəd əlavə edildi.' : 'Sənəd göndərildi — qurucuya düşdü.'); go('#doc/' + id); };
+    toast(isF(u) ? 'Sənəd əlavə edildi.' : 'Sənəd göndərildi — qurucuya düşdü.'); go('#docs'); };
 }
 
 function pDoc(u, id){
@@ -364,7 +380,7 @@ function pDoc(u, id){
     const f = S.files.find(x => x.id === +a.dataset.f), l = document.createElement('a'); l.href = f.data; l.download = f.name; l.click(); });
   if ($('#rv')) $('#rv').onsubmit = ev => { ev.preventDefault(); const f = new FormData(ev.target);
     d.status = f.get('status'); d.review_note = f.get('note').trim(); d.reviewed_by = u.id;
-    logAdd(d.id, u.id, STATUSES[d.status][0], d.review_note || null); save(); flash('Status yeniləndi.'); render(); };
+    logAdd(d.id, u.id, STATUSES[d.status][0], d.review_note || null); save(); if (d.status !== 'yeni') { toast('Status yeniləndi — növbəti sənəd.'); go('#docs'); } else { flash('Status yeniləndi.'); render(); } };
   $('#cm').onsubmit = ev => { ev.preventDefault(); logAdd(d.id, u.id, 'şərh', new FormData(ev.target).get('note').trim()); save(); render(); };
   if ($('#del')) $('#del').onclick = () => { if (!confirm('Sənəd və faylları birdəfəlik silinsin?')) return;
     S.docs = S.docs.filter(x => x.id !== d.id); S.files = S.files.filter(x => x.document_id !== d.id); S.log = S.log.filter(x => x.document_id !== d.id);
@@ -444,7 +460,7 @@ function pTeam(u){
 }
 
 function pProfile(u){
-  shell(u, 'profile', `<div class="narrow">${sendCard()}<div class="card" style="position:relative"><label title="Şəkli dəyiş" style="position:absolute;top:14px;right:14px;margin:0;cursor:pointer">${u.avatar ? `<img id="av" src="${u.avatar}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid #ddd">` : `<div id="av" style="width:72px;height:72px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:30px;color:#6b7280">${e((u.name||'?').trim()[0]||'?').toUpperCase()}</div>`}<input type="file" id="avIn" accept="image/*" style="display:none"></label><h1>${e(u.name)}</h1><p class="muted">${roleName(u)} · Giriş kodu: <b>${e(u.code)}</b><br>${chain(u.path)}</p>
+  shell(u, 'profile', `<div class="narrow">${sendCard()}<div class="card" style="position:relative"><label title="Şəkli dəyiş" style="position:absolute;top:14px;right:14px;margin:0;cursor:pointer">${true ? `<img id="av" src="${avOf(u)}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid #ddd">` : `<div id="av" style="width:72px;height:72px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:30px;color:#6b7280">${e((u.name||'?').trim()[0]||'?').toUpperCase()}</div>`}<input type="file" id="avIn" accept="image/*" style="display:none"></label><h1>${e(u.name)}</h1><p class="muted">${roleName(u)} · Giriş kodu: <b>${e(u.code)}</b><br>${chain(u.path)}</p>
     <h2>Kod / telefon / parol</h2><form id="f"><div id="err"></div>
     <label>Telefon nömrəsi${phoneFields(u.phone)}</label>
     <label>Giriş kodu<input name="code" required class="up" maxlength="12" value="${e(u.code)}"></label>
@@ -455,7 +471,9 @@ function pProfile(u){
     <input type="file" id="avIn2" accept="image/*">${u.avatar ? ` <button type="button" class="btn" id="avDel" style="background:#6b7280">Şəkli sil</button>` : ''}
     <h2 style="margin-top:22px">Arxa fon</h2><p class="muted" style="margin:4px 0 8px">Şablon seç və ya öz şəklini yüklə.</p>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${Object.entries(BGS).map(([k, [n, v]]) => `<div class="bgT" data-k="${k}" title="${n}" style="cursor:pointer;height:58px;border-radius:10px;border:3px solid ${(!u.bgImg && (u.bg || 'none') === k) ? '#1d4ed8' : '#e5e7eb'};background:${v || '#f3f4f6'};display:flex;align-items:flex-end;padding:4px 6px;font-size:12px;color:#111"><span style="background:#fffc;border-radius:6px;padding:1px 6px">${n}</span></div>`).join('')}</div>
-    <p style="margin:10px 0 4px"><b>Öz şəklin:</b></p><input type="file" id="bgIn" accept="image/*">${u.bgImg ? ` <button type="button" class="btn" id="bgDel" style="background:#6b7280">Öz fonu sil</button>` : ''}</div></div>`);
+    <h2 style="margin-top:22px">Başlıq şəkli</h2><p class="muted" style="margin:4px 0 8px">Yuxarıdakı tünd zolağın (Agent Şəbəkəsi yazılan yer) arxa fonu.</p>
+    <input type="file" id="hdIn" accept="image/*">${u.hdrImg ? ` <button type="button" class="btn" id="hdDel" style="background:#6b7280">Başlıq şəklini sil</button>` : ''}
+    <p style="margin:10px 0 4px"><b>Öz şəklin (səhifə fonu):</b></p><input type="file" id="bgIn" accept="image/*">${u.bgImg ? ` <button type="button" class="btn" id="bgDel" style="background:#6b7280">Öz fonu sil</button>` : ''}</div></div>`);
   document.querySelectorAll('.bgT').forEach(t => t.onclick = () => { u.bg = t.dataset.k; delete u.bgImg; save(); flash('Arxa fon dəyişdi.'); render(); });
   $('#bgIn').onchange = ev => { const file = ev.target.files[0]; if (!file || !/^image\//.test(file.type)) return;
     const img = new Image(), rd = new FileReader();
@@ -463,6 +481,13 @@ function pProfile(u){
       c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
       u.bgImg = c.toDataURL('image/jpeg', 0.72); if (save()) flash('Arxa fon şəkli qoyuldu.'); else { delete u.bgImg; save(); flash('Şəkil çox böyükdür, başqasını seçin.', 'err'); }
       render(); }; img.src = rd.result; }; rd.readAsDataURL(file); };
+  $('#hdIn').onchange = ev => { const file = ev.target.files[0]; if (!file || !/^image\//.test(file.type)) return;
+    const img = new Image(), rd = new FileReader();
+    rd.onload = () => { img.onload = () => { const W = 1400, H = 140, c = document.createElement('canvas'), k = Math.max(W / img.width, H / img.height);
+      c.width = W; c.height = H; c.getContext('2d').drawImage(img, (W - img.width * k) / 2, (H - img.height * k) / 2, img.width * k, img.height * k);
+      u.hdrImg = c.toDataURL('image/jpeg', 0.75); if (save()) flash('Başlıq şəkli qoyuldu.'); else { delete u.hdrImg; save(); flash('Şəkil çox böyükdür.', 'err'); }
+      render(); }; img.src = rd.result; }; rd.readAsDataURL(file); };
+  if ($('#hdDel')) $('#hdDel').onclick = () => { delete u.hdrImg; save(); flash('Başlıq şəkli silindi.'); render(); };
   if ($('#bgDel')) $('#bgDel').onclick = () => { delete u.bgImg; save(); flash('Öz fon silindi.'); render(); };
   const setAv = file => { if (!file) return; if (!/^image\//.test(file.type)) return flash('Yalnız şəkil faylı seçin.', 'err'), render();
     const img = new Image(), rd = new FileReader();
@@ -557,7 +582,7 @@ function render(){
   const u = me();
   if (!u) return pLogin();
   window.scrollTo(0, 0);
-  ({ home:pHome, docs:pDocs, done:(u, q) => pDocs(u, q, true), new:pNew, doc:pDoc, team:pTeam, profile:pProfile }[page] || pHome)(u, page === 'doc' ? arg : qs);
+  ({ home:pHome, docs:pDocs, done:(u, q) => pDocs(u, q, true), wait:(u, q) => pDocs(u, q, 'wait'), new:pNew, doc:pDoc, team:pTeam, profile:pProfile }[page] || pHome)(u, page === 'doc' ? arg : qs);
 }
 // Bir dəfəlik: qurucunun girişi Kod ADMIN / Parol 123
 (async () => {
