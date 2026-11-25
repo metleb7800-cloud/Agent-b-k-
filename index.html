@@ -111,7 +111,7 @@ function save(){
 }
 const nid = k => { const r = xhr('GET', 'a=nid&k=' + k); if (!r || !r.ok) { alert((r && r.err) || 'Server xətası'); throw new Error('nid'); } return r.id; };
 let S = load();
-// Yeni sənədlər / dəyişikliklər üçün serveri yoxla (15 san.)
+// Yeni sənədlər / dəyişikliklər üçün serveri yoxla (2 san.)
 setInterval(async () => {
   if (!SRV.uid || diff()) return;
   try {
@@ -122,7 +122,7 @@ setInterval(async () => {
     const busy = (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) || document.querySelector('dialog[open]');
     if (!busy && ['home','docs','done','doc','team'].includes(page)) { const y = scrollY; render(); scrollTo(0, y); }
   } catch(e){}
-}, 15000);
+}, 2000);
 function newCode(){ let c; do { c = String(100000 + Math.floor(Math.random()*900000)); } while (S.users.some(u => u.code === c)); return c; }
 S.docs.forEach(d => { if (d.status === 'baxilir') { d.status = 'yeni'; save(); } });
 S.docs.forEach(d => { if (d.dqn && d.dqn.includes('-')) { const n = d.dqn.replace(/-/g, ''); d.title = d.title.replace(d.dqn, n); d.dqn = n; save(); } });
