@@ -188,10 +188,22 @@ function shell(u, page, body){
     <div class="who" style="position:relative">${true ? `<img src="${avOf(u)}" alt="" style="position:absolute;right:100%;top:50%;transform:translateY(-50%);margin-right:8px;width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #fff">` : ''}${e(u.name)} <small>${roleName(u)}</small> <a href="#profile">Profil</a> · <a href="#logout">Çıxış</a></div></header>
     <main>${f ? `<div class="flash ${f[1]}">${e(f[0])}</div>` : ''}${body}</main>`;
 }
+// Qeyddəki İSB sətrindən əsas hissələr: PAT kodu, tarix-saat, status, DQN, ödəniş kodu, məbləğ
+function isbLine(d){
+  if (d.status !== 'tesdiq' || !d.review_note) return '';
+  const t = String(d.review_note).split(/\t|\n| {2,}/).map(x => x.trim()).filter(Boolean);
+  const pat = t.find(x => /^[A-Z]{2,5}\d{6,}$/.test(x)); if (!pat) return '';
+  const dt = t.find(x => /^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}/.test(x)) || '';
+  const st = t.find(x => /gözləyir|ödənil|edildi|qüvvə/i.test(x)) || '';
+  const dqn = t.find(x => x.toUpperCase().replace(/[-\s]/g, '') === String(d.dqn || '').toUpperCase()) || d.dqn || '';
+  const pay = t.find(x => /^\d{10,14}$/.test(x)) || '';
+  const sum = t.find(x => /^\d+\.\d{2}$/.test(x)) || '';
+  return [pat, dt, st, dqn, pay, sum].filter(Boolean).map(e).join(' · ');
+}
 function docTable(rows){
   if (!rows.length) return '<p class="muted">Sənəd yoxdur.</p>';
   return `<div class="tbl"><table><tr><th>#</th><th>Başlıq</th><th>Telefon</th><th>Göndərən</th><th>Status</th><th>Tarix</th></tr>${
-    rows.map(d => `<tr onclick="location.hash='doc/${d.id}'"><td>${d.id}</td><td><a href="#doc/${d.id}">${e(d.title)}</a>${d.doc_type?`<br><small class="muted">${e(d.doc_type)}</small>`:''}</td>
+    rows.map(d => `<tr onclick="location.hash='doc/${d.id}'"><td>${d.id}</td><td><a href="#doc/${d.id}">${e(d.title)}</a>${isbLine(d) ? `<br><small style="white-space:nowrap;color:#166534;font-weight:600">${isbLine(d)}</small>` : d.doc_type?`<br><small class="muted">${e(d.doc_type)}</small>`:''}</td>
       <td>${e((d.customer_phone || '').replace(/^0/, ''))}</td><td>${e(U(d.user_id)?.name)}</td><td>${badge(d.status)}</td><td><small>${d.created_at}</small></td></tr>`).join('')}</table></div>`;
 }
 
