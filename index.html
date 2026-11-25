@@ -189,6 +189,8 @@ function shell(u, page, body){
     <main>${f ? `<div class="flash ${f[1]}">${e(f[0])}</div>` : ''}${body}</main>`;
 }
 // Qeyddəki İSB sətrindən əsas hissələr: PAT kodu, tarix-saat, status, DQN, ödəniş kodu, məbləğ
+// Qeyddəki İSB sətrindən ödəniş kodu (məs. 400016134242)
+function payCode(d){ const t = String(d.review_note || '').split(/\t|\n|\s+/).map(x => x.trim()); return t.find(x => /^\d{10,14}$/.test(x)) || ''; }
 function isbLine(d){
   if (d.status !== 'tesdiq' || !d.review_note) return '';
   const t = String(d.review_note).split(/\t|\n| {2,}/).map(x => x.trim()).filter(Boolean);
@@ -368,7 +370,7 @@ function pDoc(u, id){
       ${kv('Prava seriyası', e(dlS), dlS)}${kv('Prava nömrəsi', e(dlN), dlN)}${kv('Növ', e(d.doc_type), d.doc_type)}
       ${kv('Müştəri', e(d.customer_name), d.customer_name)}
       ${kv('Telefon kodu', e(ph.slice(1, 3)), ph.slice(1, 3))}${kv('Telefon nömrəsi', ph ? `<a href="tel:+994${e(ph.replace(/^0/, ''))}">${e(ph.slice(3))}</a>` : '', ph.slice(3))}
-      ${kv('Məbləğ', d.amount != null ? d.amount.toFixed(2) + ' AZN' : '')}${kv('<b style="color:#16a34a">İSB kodu</b>', d.isb_code ? `<b style="color:#16a34a;font-size:1.1em">${e(d.isb_code)}</b>` : '', d.isb_code)}</dl>
+      ${kv('Məbləğ', d.amount != null ? d.amount.toFixed(2) + ' AZN' : '')}${(() => { const pc = payCode(d) || d.isb_code; return kv('<b style="color:#16a34a">' + (payCode(d) ? 'Ödəniş kodu' : 'İSB kodu') + '</b>', pc ? `<b style="color:#16a34a;font-size:1.1em">${e(pc)}</b>` : '', pc); })()}</dl>
       ${d.note ? `<p class="note">${e(d.note).replace(/\n/g,'<br>')}</p>` : ''}
       <button class="btn ghost sm" id="cp">📋 Hamısını mətn kimi kopyala</button>
       <h3>Fayllar (${files.length})</h3><div class="files">${files.map(f => `<a class="file" href="#" data-f="${f.id}">
