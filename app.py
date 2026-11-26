@@ -48,6 +48,9 @@ def has_users(c):
     return c.execute(text("SELECT 1 FROM an_rec WHERE kind='users' LIMIT 1")).first() is not None
 def isF(u): return bool(u) and u.get('role') == 'founder'
 def me(c):
+    rk = os.environ.get('ROBOT_KEY', '')
+    if rk and hmac.compare_digest(request.headers.get('X-Robot-Key', ''), rk):  # İSB robotu: qurucu adından
+        return next((u for u in rows(c, 'users').values() if u.get('role') == 'founder' and u.get('active')), None)
     uid = session.get('uid')
     if not uid: return None
     u = rows(c, 'users').get(int(uid))
@@ -202,7 +205,11 @@ def sync(c, inp):
     for id_ in dl.get('log') or []:
         if i(id_) in log and isF(V): delete(c, 'log', i(id_))
     for id_ in dl.get('users') or []:
-        if isF(V) and i(id_) != vid and i(id_) in users: delete(c, 'users', i(id_))
+        t = users.get(i(id_))
+        if not t or i(id_) == vid: continue
+        if not isF(V) and not sw(t.get('path'), V.get('path')): raise Fail('Silməyə icazə yoxdur')
+        if any(i(o.get('parent_id')) == i(id_) for o in users.values() if i(o['id']) not in [i(x) for x in dl.get('users') or []]): raise Fail('Əvvəlcə altdakı agentləri silin')
+        delete(c, 'users', i(id_))
     if isF(V) and 'founderPreset' in mt: set_meta(c, 'founderPreset', i(mt['founderPreset']))
     for kind, k in KINDS.items():
         mx = c.execute(text('SELECT MAX(id) FROM an_rec WHERE kind=:k'), {'k': kind}).scalar() or 0
