@@ -112,7 +112,9 @@ function save(){
 const nid = k => { const r = xhr('GET', 'a=nid&k=' + k); if (!r || !r.ok) { alert((r && r.err) || 'Server xətası'); throw new Error('nid'); } return r.id; };
 let S = load();
 // Yeni sənədlər / dəyişikliklər üçün serveri yoxla (2 san.)
-setInterval(async () => {
+// Arxa planda da yatmayan taymer (Web Worker) — Chrome gizli tabda adi taymerləri dəqiqədə 1 dəfəyə endirir
+function wakeTick(fn, ms){ try { const w = new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),' + ms + ')'], { type:'text/javascript' }))); w.onmessage = fn; } catch(e){ setInterval(fn, ms); } }
+wakeTick(async () => {
   if (!SRV.uid) return;
   try {
     const r = await (await fetch(API + '?a=state&rev=' + SRV.rev + '&uid=' + SRV.uid, { cache:'no-store' })).json();
