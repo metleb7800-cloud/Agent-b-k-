@@ -807,14 +807,19 @@ const DEFAULT_CFG = { id: 1, companies: [
     { type:'minik', person:'huq', electric:true, premium:500, pct:0, amount:0 },
     { type:'minik', person:'huq', ccMin:0, ccMax:2500, pending:true, note:'Mənbədə göstərilməyib' },
     { type:'minik', person:'huq', ccMin:2501, ccMax:99999, pct:15, note:'Sığorta haqqı mənbədə boşdur' },
-    // Yük (fiziki)
-    { type:'yuk', person:'fiz', regions:ATG_A, kgMin:0, kgMax:3500, premium:200, pct:15, amount:30 },
-    { type:'yuk', person:'fiz', regions:ATG_A, kgMin:3501, kgMax:7000, premium:200, pct:10, amount:20 },
-    { type:'yuk', person:'fiz', regions:ATG_A, kgMin:7001, kgMax:999999, premium:200, pct:20, amount:40 },
-    { type:'yuk', person:'fiz', kgMin:0, kgMax:3500, premium:200, pct:27, amount:54 },
-    { type:'yuk', person:'fiz', kgMin:3501, kgMax:7000, premium:200, pct:8, amount:16 },
-    { type:'yuk', person:'fiz', kgMin:7001, kgMax:999999, premium:200, pct:35, amount:70 },
-    { type:'yuk', person:'huq', pending:true, note:'Hüquqi yük limit modeli mənbədə qarışıqdır — dəqiqləşdirin' },
+    // Yük — limit modeli: sığorta haqqı limitə qədərdirsə "aşağı" faiz, limitdən yuxarıdırsa "yuxarı" faiz
+    // Bakı, Sumqayıt, Abşeron və Qarabağ bölgəsi (fiziki və hüquqi)
+    { type:'yuk', regions:ATG_A, kgMin:0, kgMax:3500, premLimit:165, below:5, above:15 },
+    { type:'yuk', regions:ATG_A, kgMin:3501, kgMax:7000, premLimit:240, below:10, above:15 },
+    { type:'yuk', regions:ATG_A, kgMin:7001, kgMax:999999, premLimit:200, below:20, above:35 },
+    // Digər rayonlar — fiziki
+    { type:'yuk', person:'fiz', kgMin:0, kgMax:3500, premLimit:135, below:15, above:27 },
+    { type:'yuk', person:'fiz', kgMin:3501, kgMax:7000, premLimit:215, below:8, above:12 },
+    { type:'yuk', person:'fiz', kgMin:7001, kgMax:999999, premLimit:165, below:15, above:35 },
+    // Digər rayonlar — hüquqi
+    { type:'yuk', person:'huq', kgMin:0, kgMax:3500, premLimit:135, below:15, above:22 },
+    { type:'yuk', person:'huq', kgMin:3501, kgMax:7000, premLimit:215, below:15, above:22 },
+    { type:'yuk', person:'huq', kgMin:7001, kgMax:999999, premLimit:165, below:15, above:35 },
     // Digər
     { type:'motosikl', premium:75, pct:-6.67, amount:-5 },
     { type:'qosqu', tow:true, pct:10, note:'Yük maşını ilə birlikdə' },
@@ -920,17 +925,23 @@ function calcAll(q, cut){
     if (co.pendingAll) return { co: co.name, st: 'wait', note: co.pendingAll };
     if (co.huqIndividual && q.person === 'huq' && !NO_CAR.includes(q.type)) return { co: co.name, st: 'wait', note: co.huqIndividual };
     if (makeHit(co.banMakes, q.make) && !(co.rules || []).some(x => x.banList)) return { co: co.name, st: 'ban', note: 'Qadağan olunmuş marka' };
-    const r = ruleFor(co, q);
+    let r = ruleFor(co, q);
     if (!r) return { co: co.name, st: 'wait', note: 'Bu hal üçün tarif yoxdur' };
     if (r.ban) return { co: co.name, st: 'ban', note: r.note || 'Qadağa' };
     if (r.pending) return { co: co.name, st: 'wait', note: r.note || 'Məlumat gözlənilir' };
+    let lim = '';
+    if (r.premLimit != null) {
+      if (!q.premium) return { co: co.name, st: 'wait', note: `Sığorta haqqını yazın: ${r.premLimit} AZN-ə qədər — ${r.below}%, yuxarı — ${r.above}%` };
+      r = Object.assign({}, r, { pct: q.premium <= r.premLimit ? r.below : r.above });
+      lim = `Limit ${r.premLimit} AZN: haqq ${q.premium <= r.premLimit ? 'limitə qədər' : 'limitdən yuxarı'}`;
+    }
     const base = r.pct != null ? +r.pct : null;
     const pct = base == null ? null : (base > 0 ? Math.max(0, +(base - cut).toFixed(2)) : base);
     const prem = q.premium || r.premium || null;
     let amt = null;
     if (pct != null && prem) amt = +(prem * pct / 100).toFixed(2);
     else if (r.amount != null && !cut) amt = r.amount;
-    return { co: co.name, st: 'ok', pct, prem, amt, note: r.note || '' };
+    return { co: co.name, st: 'ok', pct, prem, amt, note: [r.note, lim].filter(Boolean).join(' · ') };
   });
 }
 // istifadəçinin yuxarıdan çıxılan cəmi faizi
@@ -955,9 +966,9 @@ function pCalc(u){
       <p class="muted" style="margin:-4px 0 8px;font-size:13px">Siyahıda yoxdur? <a href="#" id="addCar">➕ Marka / model əlavə et</a></p>
 </div>
       <div id="fTow" hidden><label><input type="checkbox" name="tow" style="width:auto"> Dartıcı (yük maşını) ilə birlikdə sığortalanır</label></div>
-      <div id="fCc"><div class="row"><label>Mühərrik həcmi (sm³) *<input name="cc" type="number" min="0" max="20000" placeholder="məs. 1600"></label>
+      <div id="fCc"><div class="row"><label>Mühərrik həcmi (sm³) *<input name="cc" type="number" min="0" max="20000" step="any" placeholder="məs. 2800 (və ya 2.8)"></label>
         <label style="align-self:end"><input type="checkbox" name="electric" style="width:auto"> Elektromobil</label></div></div>
-      <div id="fKg" hidden><label>Tonnaj / yük götürmə (kq) *<input name="kg" type="number" min="0" max="100000" placeholder="məs. 3500"></label></div>
+      <div id="fKg" hidden><label>Tonnaj / yük götürmə (kq) *<input name="kg" type="number" min="0" max="100000" step="any" placeholder="məs. 7500 (və ya 7.5 ton)"></label></div>
       <div id="fSeat" hidden><label>Sərnişin yerlərinin sayı *<input name="seats" type="number" min="1" max="200" placeholder="məs. 18"></label></div>
       <label id="fYear">İstehsal ili *<input name="year" type="number" inputmode="numeric" min="1950" max="${new Date().getFullYear() + 1}" step="1" placeholder="məs. 2018"></label>
       <label id="fReg">Qeydiyyat ünvanı *<input name="region" list="dlReg" required placeholder="Yazın: məs. Sumqayıt"></label><datalist id="dlReg">${opt(REGIONS)}</datalist>
@@ -997,7 +1008,10 @@ function pCalc(u){
     const car = !NO_CAR.includes(f.type.value);
     const reg = car ? REGIONS.find(x => nrm(x) === nrm(f.region.value)) : '';
     if (car && !reg) return $('#cRes').innerHTML = '<div class="flash err">Qeydiyyat ünvanını siyahıdan seçin.</div>';
-    const q = { person: f.person.value, type: f.type.value, make: f.make.value.trim(), model: f.model.value.trim(), cc: +f.cc.value || 0, kg: +f.kg.value || 0,
+    let cc0 = +String(f.cc.value).replace(',', '.') || 0, kg0 = +String(f.kg.value).replace(',', '.') || 0;
+    if (cc0 > 0 && cc0 < 20) { cc0 = Math.round(cc0 * 1000); f.cc.value = cc0; } // litr yazılıbsa (2.8 → 2800)
+    if (kg0 > 0 && kg0 < 100) { kg0 = Math.round(kg0 * 1000); f.kg.value = kg0; } // ton yazılıbsa (7.5 → 7500)
+    const q = { person: f.person.value, type: f.type.value, make: f.make.value.trim(), model: f.model.value.trim(), cc: cc0, kg: kg0,
       seats: +f.seats.value || 0, region: reg, electric: f.electric.checked, premium: +f.premium.value || 0, year: +f.year.value || 0, tow: f.tow.checked };
     const res = calcAll(q, myCutOf(u));
     $('#cRes').innerHTML = `<p class="muted" style="margin-top:0">${car ? e(q.make) + ' ' + e(q.model) + ' · ' : ''}${TYPES[q.type]}${q.type === 'minik' ? (q.electric ? ' · Elektromobil' : ' · ' + q.cc + ' sm³') : q.type === 'yuk' ? ' · ' + q.kg + ' kq' : q.type === 'avtobus' ? ' · ' + q.seats + ' yer' : ''} ${car ? ' · İstehsal ili: ' + q.year + ' · ' + e(reg) : ''} · ${q.person === 'fiz' ? 'Fiziki' : 'Hüquqi'}</p>
