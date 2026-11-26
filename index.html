@@ -88,9 +88,9 @@ const ALLOWED = ['pdf','jpg','jpeg','png','webp','heic','doc','docx','xls','xlsx
 const MAX_MB = 3;
 
 // ---------- SERVER QATI ----------
-const API = 'api.php', KINDS = ['users','docs','files','log'];
+const API = 'api.php', KINDS = ['users','docs','files','log','cfg','cars'];
 let BASE = {}, SRV = { hasUsers:false, rev:0, uid:0 };
-function blank(){ return { users:[], docs:[], files:[], log:[], seq:{u:0,d:0,f:0,l:0} }; }
+function blank(){ return { users:[], docs:[], files:[], log:[], cfg:[], cars:[], seq:{u:0,d:0,f:0,l:0,c:0,k:0} }; }
 function xhr(method, q, body){
   const x = new XMLHttpRequest(); x.open(method, API + '?' + q, false);
   if (body) x.setRequestHeader('Content-Type', 'application/json');
@@ -101,7 +101,7 @@ function snap(st){ const b = { _fp: st.founderPreset || 0 }; for (const k of KIN
 function cacheForRobot(st){ try { localStorage.setItem(KEY, JSON.stringify({ docs: st.docs || [] })); } catch(e){} }
 function setState(r){
   SRV.hasUsers = !!r.hasUsers; SRV.rev = r.rev || 0; SRV.uid = r.uid || 0;
-  const st = r.state || blank(); BASE = snap(st); cacheForRobot(st);
+  const st = r.state || blank(); st.cfg = st.cfg || []; st.cars = st.cars || []; BASE = snap(st); cacheForRobot(st);
   if (SRV.uid) sessionStorage.setItem('agentnet_uid', SRV.uid); else sessionStorage.removeItem('agentnet_uid');
   return st;
 }
@@ -202,7 +202,7 @@ function shell(u, page, body){
     <nav>${a('home','Panel')}${a('docs','Sənədlər'+(n?` <b class="dot">${n}</b>`:''))}${a('new','+ Sənəd göndər')}${a('team','Komanda')}${a('done','✓ Təsdiqlənənlər')}</nav>
     <div class="who" style="position:relative">${true ? `<img src="${avOf(u)}" alt="" style="position:absolute;right:100%;top:50%;transform:translateY(-50%);margin-right:8px;width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #fff">` : ''}${e(u.name)} <small>${roleName(u)}</small> <a href="#profile">Profil</a> · <a href="#logout">Çıxış</a></div></header>
     <main>${f ? `<div class="flash ${f[1]}">${e(f[0])}</div>` : ''}${body}</main>`;
-  drawWatch(page);
+  drawWatch(page); calcFab(page);
 }
 // ---------- Göndərilən sənədin İSB gedişatı (ekranın üstündə ayrıca pəncərə — düymələr yerindən oynamır) ----------
 const watchGet = () => +(sessionStorage.getItem('agentnet_watch') || 0);
@@ -213,7 +213,7 @@ function isbParts(d){
     st: t.find(x => /gözləyir|ödənil|qüvvə/i.test(x)) || '', pay: t.find(x => /^\d{10,14}$/.test(x)) || '', sum: t.find(x => /^\d+\.\d{2}$/.test(x)) || '' };
 }
 function drawWatch(page){
-  document.getElementById('watchBox')?.remove(); document.getElementById('dlApp')?.remove();
+  document.getElementById('watchBox')?.remove(); document.getElementById('dlApp')?.remove(); document.getElementById('calcFab')?.remove();
   const id = watchGet(); if (!id || page === 'new') return;
   const d = S.docs.find(x => x.id === id); if (!d) return watchSet(0);
   const lastLog = S.log.filter(l => l.document_id === id).slice(-1)[0];
@@ -506,7 +506,7 @@ function pTeam(u){
       ${isF(u) ? `<a class="pill" href="#docs?who=${x.id}">${mine.length} sənəd · ${mine.filter(d=>d.status==='tesdiq').length} ✓</a>` : ''}
       ${kids.length ? `<small class="muted">${kids.length} alt</small>` : ''}
       <span class="acts">${x.active ? `<button class="link" data-add="${x.id}">+ alt əlavə et</button>` : ''}
-      ${x.id !== u.id ? `<button class="link" data-ed="${x.id}">kod / parol</button><button class="link" data-del="${x.id}" style="color:#dc2626">sil</button>` : ''}</span></div>
+      ${x.id !== u.id ? `<button class="link" data-ed="${x.id}">kod / parol</button><button class="link" data-del="${x.id}" style="color:#dc2626">sil</button><button class="link" data-cut="${x.id}">faiz${x.cut ? ' (−' + x.cut + ')' : ''}</button>` : ''}</span></div>
       ${kids.length ? `<ul>${kids.map(node).join('')}</ul>` : ''}</li>`;
   };
   shell(u, 'team', `${sendCard()}<h1>Komanda ağacı</h1><p class="muted">Siz öz budağınızdakı hər kəsi görür və idarə edirsiniz. Hər kəs öz altına yeni agent aça bilər.</p>
@@ -532,6 +532,10 @@ function pTeam(u){
     $('#tEd').textContent = target.name + ' — kod / parol'; $('#eEd').innerHTML = '';
     $('#fEd').reset(); const [op = '', no = ''] = (target.phone || '').split(' '); $('#fEd').op.value = op; $('#fEd').phone_no.value = no;
     $('#fEd').code.value = target.code; $('#dEd').showModal(); });
+  document.querySelectorAll('[data-cut]').forEach(b => b.onclick = () => { const t = U(b.dataset.cut);
+    const v = prompt(`“${t.name}” üçün çıxılan faiz (məs. 5 yazsanız, sizin faizinizdən 5% az görəcək):`, t.cut || 0); if (v == null) return;
+    const n = +String(v).replace(',', '.'); if (!(n >= 0 && n <= 100)) return alert('0 ilə 100 arası rəqəm yazın.');
+    t.cut = n; save(); toast(t.name + ': −' + n + '%'); render(); });
   document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { const t = U(b.dataset.del);
     if (S.users.some(k => k.parent_id === t.id)) return alert(`“${t.name}” altında agentlər var. Əvvəlcə onları silin.`);
     if (!confirm(`“${t.name}” (kod ${t.code}) tam silinsin? Bu geri qaytarılmır.\nGöndərdiyi sənədlər qurucuda qalacaq.`)) return;
@@ -666,6 +670,295 @@ function importJSON(){
 }
 
 // ---------- MARŞRUT ----------
+// ===================== KALKULYATOR =====================
+// Regionlar (Azərbaycanın bütün şəhər və rayonları)
+const REGIONS = ['Bakı','Sumqayıt','Abşeron','Gəncə','Mingəçevir','Şirvan','Naxçıvan','Lənkəran','Şəki','Yevlax','Naftalan','Xankəndi','Şuşa',
+  'Ağcabədi','Ağdam','Ağdaş','Ağdərə','Ağstafa','Ağsu','Astara','Babək','Balakən','Bərdə','Beyləqan','Biləsuvar','Cəbrayıl','Cəlilabad','Culfa',
+  'Daşkəsən','Füzuli','Gədəbəy','Goranboy','Göyçay','Göygöl','Hacıqabul','Xaçmaz','Xızı','Xocalı','Xocavənd','İmişli','İsmayıllı','Kəlbəcər',
+  'Kəngərli','Kürdəmir','Qax','Qazax','Qəbələ','Qobustan','Quba','Qubadlı','Qusar','Laçın','Lerik','Masallı','Neftçala','Oğuz','Ordubad','Saatlı',
+  'Sabirabad','Salyan','Samux','Sədərək','Siyəzən','Şabran','Şahbuz','Şamaxı','Şəmkir','Şərur','Tərtər','Tovuz','Ucar','Yardımlı','Zaqatala','Zəngilan','Zərdab'];
+
+// Marka → modellər (Azərbaycan bazarında rast gəlinənlər)
+const CARS = {
+  'Toyota':['Camry','Corolla','Prius','RAV4','Land Cruiser','Land Cruiser Prado','Highlander','Yaris','Auris','Avalon','C-HR','Hilux','Sequoia','Tundra','4Runner','Fortuner','Venza','Sienna','Crown','Mark X','Alphard','HiAce','Coaster','bZ4X'],
+  'Lexus':['RX','LX','GX','ES','IS','GS','LS','NX','UX','LC','RC','LM'],
+  'Mercedes-Benz':['A-Class','B-Class','C-Class','E-Class','S-Class','CLA','CLS','GLA','GLB','GLC','GLE','GLS','G-Class','ML','GL','Vito','Viano','V-Class','Sprinter','Actros','Atego','Axor','EQS','EQE','EQC','Maybach'],
+  'BMW':['1 Series','2 Series','3 Series','4 Series','5 Series','6 Series','7 Series','8 Series','X1','X2','X3','X4','X5','X6','X7','Z4','i3','i4','i7','iX','iX3','M3','M5'],
+  'Audi':['A3','A4','A5','A6','A7','A8','Q2','Q3','Q5','Q7','Q8','TT','e-tron','e-tron GT','RS6','S8'],
+  'Volkswagen':['Golf','Jetta','Passat','Passat CC','Polo','Tiguan','Touareg','Touran','Teramont','Arteon','Amarok','Caddy','Transporter','Multivan','Crafter','ID.4','ID.6','Bora','Lavida','Sagitar'],
+  'Hyundai':['Accent','Elantra','Sonata','Tucson','Santa Fe','Creta','i10','i20','i30','i40','Getz','Grandeur','Genesis','Palisade','Kona','Ioniq','Ioniq 5','Staria','H-1','Starex','Porter','HD65','HD72','HD78','County','Universe'],
+  'Kia':['Rio','Cerato','Forte','Optima','K5','K8','Sportage','Sorento','Seltos','Soul','Picanto','Carnival','Mohave','Stinger','Niro','EV6','EV9','Bongo','K2500'],
+  'Nissan':['Almera','Sunny','Sentra','Tiida','Note','Juke','Qashqai','X-Trail','Murano','Pathfinder','Patrol','Teana','Maxima','Altima','Navara','Leaf','Ariya','Micra','Primera'],
+  'Infiniti':['Q50','Q70','QX50','QX56','QX60','QX70','QX80','FX35','FX37','FX45','M35','M37'],
+  'Honda':['Civic','Accord','CR-V','HR-V','Pilot','Fit','Jazz','Insight','Odyssey','e:NS1','e:NP1'],
+  'Mazda':['2','3','6','CX-3','CX-5','CX-7','CX-9','CX-30','CX-60','MX-5','Tribute'],
+  'Mitsubishi':['Lancer','Outlander','Pajero','Pajero Sport','ASX','Eclipse Cross','L200','Galant','Colt','Canter','Fuso'],
+  'Subaru':['Forester','Outback','Impreza','Legacy','XV','Tribeca','WRX'],
+  'Suzuki':['Swift','Vitara','Grand Vitara','SX4','Jimny','Baleno','Alto','Ertiga'],
+  'Ford':['Focus','Fiesta','Mondeo','Fusion','Mustang','Explorer','Escape','Kuga','Edge','Expedition','Ranger','F-150','Transit','Transit Connect','Tourneo','Cargo'],
+  'Chevrolet':['Aveo','Cruze','Lacetti','Cobalt','Nexia','Spark','Malibu','Captiva','Tahoe','Trailblazer','Equinox','Orlando','Camaro','Epica','Niva','Damas','Labo','Bolt','Volt'],
+  'Daewoo':['Nexia','Matiz','Lanos','Gentra','Lacetti','Damas','Labo','Novus'],
+  'Opel':['Astra','Vectra','Insignia','Corsa','Zafira','Meriva','Mokka','Antara','Omega','Vivaro','Movano'],
+  'Renault':['Logan','Sandero','Duster','Megane','Clio','Fluence','Symbol','Kangoo','Master','Trafic','Arkana','Koleos'],
+  'Peugeot':['206','207','208','301','307','308','407','408','508','2008','3008','5008','Partner','Boxer','Expert'],
+  'Citroen':['C3','C4','C5','C-Elysee','Berlingo','Jumper','Jumpy'],
+  'Skoda':['Octavia','Superb','Rapid','Fabia','Kodiaq','Karoq','Yeti'],
+  'Lada (VAZ)':['2101','2104','2105','2106','2107','2109','21099','2110','2112','2114','2115','2121 Niva','4x4 Niva','Priora','Kalina','Granta','Vesta','Largus','XRAY'],
+  'GAZ':['Volga 3110','Volga 31105','Gazelle','Gazelle Next','Sobol','GAZ-53','GAZ-3307','Valdai'],
+  'UAZ':['469','Hunter','Patriot','Buhanka (452)','Pickup'],
+  'Moskvich':['412','2140','2141','3','6'],
+  'KAMAZ':['5320','5410','5511','53212','65115','6520','43118','4308','65116','6460'],
+  'MAZ':['5336','5440','5516','6303','6430','4370','103 (avtobus)','203 (avtobus)'],
+  'ZIL':['130','131','4331','5301 (Bıçok)'],
+  'Isuzu':['NPR','NQR','NMR','Elf','Forward','Giga','D-Max','Novo (avtobus)'],
+  'Hino':['300','500','700'],
+  'DAF':['XF','CF','LF'],
+  'MAN':['TGA','TGS','TGX','TGL','TGM','Lion\'s Coach'],
+  'Scania':['R-series','G-series','P-series','S-series'],
+  'Volvo':['S40','S60','S80','S90','XC40','XC60','XC70','XC90','V40','V60','FH','FM','FL'],
+  'Iveco':['Daily','Eurocargo','Stralis','S-Way'],
+  'Mercedes-Benz Trucks':['Actros','Atego','Axor','Arocs'],
+  'Land Rover':['Range Rover','Range Rover Sport','Range Rover Evoque','Range Rover Velar','Discovery','Discovery Sport','Defender','Freelander'],
+  'Porsche':['Cayenne','Macan','Panamera','911','Taycan'],
+  'Jeep':['Grand Cherokee','Cherokee','Compass','Wrangler','Renegade'],
+  'Dodge':['Charger','Challenger','Durango','Ram','Caravan'],
+  'Chrysler':['300C','Pacifica','Town & Country'],
+  'Cadillac':['Escalade','CTS','XT5','SRX'],
+  'Lincoln':['Navigator','MKZ','Aviator'],
+  'Tesla':['Model 3','Model S','Model X','Model Y'],
+  'BYD':['Song Plus','Han','Tang','Qin Plus','Seal','Atto 3','Dolphin','Yuan Plus','Song L','Seagull','Destroyer 05'],
+  'Chery':['Tiggo 2','Tiggo 4','Tiggo 7','Tiggo 7 Pro','Tiggo 8','Tiggo 8 Pro','Arrizo 5','Arrizo 8','Omoda C5'],
+  'Geely':['Coolray','Atlas','Monjaro','Emgrand','Tugella','Geometry C'],
+  'Haval':['H6','Jolion','F7','Dargo','H9'],
+  'Changan':['CS35','CS55','CS75','UNI-K','UNI-T','UNI-V','Eado','Alsvin'],
+  'JAC':['S3','S5','J7','N-series (yük)'],
+  'Zeekr':['001','007','X'],
+  'Li Auto':['L7','L8','L9'],
+  'Hongqi':['H5','H9','HS5','E-HS9'],
+  'Dongfeng':['AX7','Aeolus','Captain (yük)'],
+  'FAW':['Besturn','Tiger V','J6 (yük)'],
+  'Foton':['Aumark','Auman','Tunland','Ollin'],
+  'Shacman':['X3000','F3000','H3000'],
+  'Howo (Sinotruk)':['A7','T7H','TX'],
+  'Lifan':['Solano','X60','Smily'],
+  'Great Wall':['Wingle','Hover','Poer'],
+  'Ssangyong':['Rexton','Kyron','Actyon','Korando','Tivoli'],
+  'Fiat':['Doblo','Ducato','Linea','Albea','500','Punto'],
+  'Mini':['Cooper','Countryman','Clubman'],
+  'Jaguar':['XF','XE','XJ','F-Pace','E-Pace'],
+  'Maserati':['Ghibli','Levante','Quattroporte'],
+  'Bentley':['Bentayga','Continental GT','Flying Spur'],
+  'Rolls-Royce':['Cullinan','Ghost','Phantom'],
+  'Genesis':['G70','G80','G90','GV70','GV80'],
+  'Daihatsu':['Terios','Sirion'],
+  'Seat':['Leon','Ibiza','Toledo'],
+  'Otokar':['Navigo','Sultan','Doruk'],
+  'Paz':['3205','4234'],
+  'Yutong':['ZK6122','ZK6107','ZK6938'],
+  'Higer':['KLQ6129','KLQ6928'],
+  'Golden Dragon':['XML6127','XML6102'],
+  'Ural':['4320','375'],
+  'Belarus (MTZ)':['80','82','892','1221'],
+  'Caterpillar':['Ekskavator','Buldozer','Yükləyici'],
+  'JCB':['3CX','4CX','JS ekskavator'],
+  'Yamaha':['Motosikl'],'Honda Moto':['Motosikl'],'Bajaj':['Pulsar','Boxer'],'Minsk':['Motosikl'],'IJ':['Planeta','Jupiter'],
+};
+
+// Qarabağ və digər qrup siyahıları
+const REG_GROUPS = {
+  'Qarabağ': ['Ağdam','Ağdərə','Füzuli','Cəbrayıl','Zəngilan','Qubadlı','Laçın','Kəlbəcər','Şuşa','Xankəndi','Xocalı','Xocavənd'],
+};
+
+// ---- Standart tariflər (mənbə: göndərilən fayllar). Qurucu "Tariflər" bölməsindən dəyişə bilər. ----
+// Qayda sahələri: type (minik/yuk/avtobus/motosikl/qosqu/texnika/serhed), person (fiz/huq), ccMin/ccMax, kgMin/kgMax, seatMin/seatMax,
+// electric (true/false), makes / makesNot (marka adının hissəsi), regions / regionsNot, ban (qadağa), pct (komissiya faizi), premium (sığorta haqqı), amount (komissiya AZN), note
+const ATG_A = ['Bakı','Sumqayıt','Abşeron','Ağdam','Füzuli','Qubadlı','Zəngilan','Cəbrayıl','Laçın','Kəlbəcər','Şuşa','Xankəndi','Ağdərə','Xocalı','Xocavənd'];
+const SEN_A = ['Bakı','Abşeron','Sumqayıt','Gəncə','Cəbrayıl','Füzuli','Laçın','Qubadlı','Şuşa','Xankəndi','Xocalı','Zəngilan'];
+const DEFAULT_CFG = { id: 1, companies: [
+  { name: 'ATƏŞGAH Sığorta', banMakes: [], banNote: 'ATƏŞGAH qadağa markaları siyahısı verilməyib — qurucu əlavə etməlidir', rules: [
+    // VAZ / LADA
+    { type:'minik', person:'fiz', makes:['Lada','VAZ'], ccMin:0, ccMax:1500, premium:85, pct:0, amount:0 },
+    { type:'minik', person:'fiz', makes:['Lada','VAZ'], ccMin:1501, ccMax:2000, premium:99, pct:14.14, amount:14 },
+    // Qadağa siyahısındakı markalar (banMakes) — ayrıca tarif
+    { type:'minik', banList:true, ccMin:0, ccMax:1500, premium:95, pct:5, amount:4.75 },
+    { type:'minik', banList:true, ccMin:1501, ccMax:2000, premium:95, amount:-5, note:'Cərimə ödəyəcəksən' },
+    { type:'minik', banList:true, ccMin:2001, ccMax:2500, premium:95, amount:-15, note:'Cərimə ödəyəcəksən' },
+    { type:'minik', banList:true, ccMin:2501, ccMax:3000, pending:true, note:'Mənbədə natamamdır' },
+    { type:'minik', banList:true, ccMin:3001, ccMax:99999, premium:115, pct:20, note:'Mənbədə cədvəllər uyğun gəlmir — dəqiqləşdirin' },
+    { type:'minik', banList:true, electric:true, premium:120, pct:0 },
+    // Fiziki minik
+    { type:'minik', person:'fiz', electric:true, premium:200, pct:5, amount:10 },
+    { type:'minik', person:'fiz', ccMin:0, ccMax:1500, premium:111, pct:14.41, amount:16 },
+    { type:'minik', person:'fiz', ccMin:1501, ccMax:2000, premium:127, pct:11.81, amount:15 },
+    { type:'minik', person:'fiz', ccMin:2001, ccMax:2500, premium:126, pct:15, amount:18.9 },
+    { type:'minik', person:'fiz', ccMin:2501, ccMax:3000, premium:146, pct:24.66, amount:36 },
+    { type:'minik', person:'fiz', ccMin:3001, ccMax:3500, premium:169, pct:34.91, amount:59 },
+    { type:'minik', person:'fiz', ccMin:3501, ccMax:99999, premium:200, pct:35, amount:70 },
+    // Hüquqi minik
+    { type:'minik', person:'huq', electric:true, premium:500, pct:0, amount:0 },
+    { type:'minik', person:'huq', ccMin:0, ccMax:2500, pending:true, note:'Mənbədə göstərilməyib' },
+    { type:'minik', person:'huq', ccMin:2501, ccMax:99999, pct:15, note:'Sığorta haqqı mənbədə boşdur' },
+    // Yük (fiziki)
+    { type:'yuk', person:'fiz', regions:ATG_A, kgMin:0, kgMax:3500, premium:200, pct:15, amount:30 },
+    { type:'yuk', person:'fiz', regions:ATG_A, kgMin:3501, kgMax:7000, premium:200, pct:10, amount:20 },
+    { type:'yuk', person:'fiz', regions:ATG_A, kgMin:7001, kgMax:999999, premium:200, pct:20, amount:40 },
+    { type:'yuk', person:'fiz', kgMin:0, kgMax:3500, premium:200, pct:27, amount:54 },
+    { type:'yuk', person:'fiz', kgMin:3501, kgMax:7000, premium:200, pct:8, amount:16 },
+    { type:'yuk', person:'fiz', kgMin:7001, kgMax:999999, premium:200, pct:35, amount:70 },
+    { type:'yuk', person:'huq', pending:true, note:'Hüquqi yük limit modeli mənbədə qarışıqdır — dəqiqləşdirin' },
+    // Digər
+    { type:'motosikl', premium:75, pct:-6.67, amount:-5 },
+    { type:'qosqu', pct:10, note:'Yük maşını ilə birlikdə sığortalansa; əks halda 0%' },
+    { type:'texnika', pct:20 },
+    { type:'avtobus', pct:0 },
+    { type:'serhed', pct:0 },
+  ]},
+  { name: 'SƏNAYE Sığorta', banMakes: [], rules: [
+    { type:'yuk', ban:true, makes:['Isuzu','Hyundai','Mitsubishi'], note:'Bütün yük avtomobilləri üzrə qadağa' },
+    { type:'minik', makes:['Lada','VAZ'], ccMin:0, ccMax:1500, pct:15 },
+    { type:'minik', ccMin:0, ccMax:2000, pending:true, note:'Bu həcm üçün tarif verilməyib' },
+    { type:'minik', makes:['BMW'], ccMin:2001, ccMax:3000, ban:true, note:'BMW qadağandır' },
+    { type:'minik', ccMin:2001, ccMax:2500, pct:10 },
+    { type:'minik', ccMin:2501, ccMax:3000, pct:18 },
+    { type:'minik', makes:['Mercedes'], regions:['Bakı','Qarabağ'], ccMin:3001, ccMax:3500, pct:0, note:'Bakı, Qarabağ — Mercedes' },
+    { type:'minik', ccMin:3001, ccMax:3500, pct:26 },
+    { type:'minik', ccMin:3501, ccMax:99999, pct:32 },
+    { type:'yuk', makes:['Ford'], regions:SEN_A, kgMin:0, kgMax:3500, pct:0, note:'Ford' },
+    { type:'yuk', regions:SEN_A, kgMin:0, kgMax:3500, pct:31 },
+    { type:'yuk', kgMin:0, kgMax:3500, pct:10 },
+    { type:'yuk', kgMin:3501, kgMax:7000, pct:0 },
+    { type:'yuk', makes:['KAMAZ'], regions:SEN_A, kgMin:7001, kgMax:999999, pct:0, note:'KAMAZ' },
+    { type:'yuk', makes:['KAMAZ'], kgMin:7001, kgMax:999999, pct:23, note:'KAMAZ' },
+    { type:'yuk', person:'huq', kgMin:7001, kgMax:999999, pct:32 },
+    { type:'yuk', person:'fiz', kgMin:7001, kgMax:999999, pct:33 },
+  ]},
+  { name: 'PAŞA Sığorta', banMakes: [], rules: [], pendingAll: 'Tariflər hələ daxil edilməyib' },
+]};
+const TYPES = { minik:'Minik', yuk:'Yük', avtobus:'Avtobus', motosikl:'Motosikl', qosqu:'Qoşqu', texnika:'Ağır texnika', serhed:'Sərhəd' };
+
+const cfgNow = () => ((S.cfg || []).find(x => x.id === 1)) || DEFAULT_CFG;
+const nrm = x => String(x || '').toLocaleLowerCase('az').replace(/İ/g,'i').replace(/[\s\-()]/g, '');
+const makeHit = (list, make) => (list || []).some(m => nrm(make).includes(nrm(m)) || (nrm(m) && nrm(m).includes(nrm(make)) && nrm(make).length > 2));
+const regHit = (list, reg) => (list || []).some(r => r === reg || (REG_GROUPS[r] || []).includes(reg));
+function ruleFor(co, q){
+  const inBan = makeHit(co.banMakes, q.make);
+  for (const r of co.rules || []) {
+    if (r.type !== q.type) continue;
+    if (r.person && r.person !== q.person) continue;
+    if (r.banList && !inBan) continue;
+    if (!r.banList && inBan && q.type === 'minik' && (co.rules || []).some(x => x.banList)) continue;
+    if (r.electric != null && !!r.electric !== !!q.electric) continue;
+    if (r.electric == null && q.electric && q.type === 'minik' && (co.rules || []).some(x => x.type === 'minik' && x.electric && (!x.person || x.person === q.person) && !!x.banList === inBan)) continue;
+    if (r.makes && !makeHit(r.makes, q.make)) continue;
+    if (r.makesNot && makeHit(r.makesNot, q.make)) continue;
+    if (r.regions && !regHit(r.regions, q.region)) continue;
+    if (r.regionsNot && regHit(r.regionsNot, q.region)) continue;
+    if (q.type === 'minik' && !q.electric && r.ccMin != null && !(q.cc >= r.ccMin && q.cc <= r.ccMax)) continue;
+    if (q.type === 'yuk' && r.kgMin != null && !(q.kg >= r.kgMin && q.kg <= r.kgMax)) continue;
+    if (q.type === 'avtobus' && r.seatMin != null && !(q.seats >= r.seatMin && q.seats <= r.seatMax)) continue;
+    return r;
+  }
+  return null;
+}
+function calcAll(q, cut){
+  return cfgNow().companies.map(co => {
+    if (co.pendingAll) return { co: co.name, st: 'wait', note: co.pendingAll };
+    if (makeHit(co.banMakes, q.make) && !(co.rules || []).some(x => x.banList)) return { co: co.name, st: 'ban', note: 'Qadağan olunmuş marka' };
+    const r = ruleFor(co, q);
+    if (!r) return { co: co.name, st: 'wait', note: 'Bu hal üçün tarif yoxdur' };
+    if (r.ban) return { co: co.name, st: 'ban', note: r.note || 'Qadağa' };
+    if (r.pending) return { co: co.name, st: 'wait', note: r.note || 'Məlumat gözlənilir' };
+    const base = r.pct != null ? +r.pct : null;
+    const pct = base == null ? null : (base > 0 ? Math.max(0, +(base - cut).toFixed(2)) : base);
+    const prem = q.premium || r.premium || null;
+    let amt = null;
+    if (pct != null && prem) amt = +(prem * pct / 100).toFixed(2);
+    else if (r.amount != null && !cut) amt = r.amount;
+    return { co: co.name, st: 'ok', pct, prem, amt, note: r.note || '' };
+  });
+}
+// istifadəçinin yuxarıdan çıxılan cəmi faizi
+function myCutOf(u){
+  if (!u || isF(u)) return 0;
+  if (S.myCut != null && typeof SRV !== 'undefined') return +S.myCut || 0;
+  let t = 0, x = u; while (x && !isF(x)) { t += +(x.cut || 0); x = U(x.parent_id); } return t;
+}
+
+function pCalc(u){
+  const cars = S.cars || [], extraMakes = {};
+  cars.forEach(k => { (extraMakes[k.make] = extraMakes[k.make] || []).push(k.model); });
+  const allMakes = [...new Set([...Object.keys(CARS), ...Object.keys(extraMakes)])].sort((a, b) => a.localeCompare(b, 'az'));
+  const opt = arr => arr.map(x => `<option value="${e(x)}">`).join('');
+  const F = isF(u);
+  shell(u, 'calc', `<h1>🧮 Kalkulyator</h1>
+    <div class="grid2"><div class="card"><form id="cf" autocomplete="off">
+      <div class="row"><label>Sığortalı<select name="person"><option value="fiz">Fiziki şəxs</option><option value="huq">Hüquqi şəxs</option></select></label>
+        <label>NV növü<select name="type">${Object.entries(TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></label></div>
+      <label>Marka *<input name="make" list="dlMake" required placeholder="Yazın: məs. Toyota"></label><datalist id="dlMake">${opt(allMakes)}</datalist>
+      <label>Model *<input name="model" list="dlModel" required placeholder="Əvvəl markanı seçin"></label><datalist id="dlModel"></datalist>
+      <p class="muted" style="margin:-4px 0 8px;font-size:13px">Siyahıda yoxdur? <a href="#" id="addCar">➕ Marka / model əlavə et</a></p>
+      <div id="fCc"><div class="row"><label>Mühərrik həcmi (sm³) *<input name="cc" type="number" min="0" max="20000" placeholder="məs. 1600"></label>
+        <label style="align-self:end"><input type="checkbox" name="electric" style="width:auto"> Elektromobil</label></div></div>
+      <div id="fKg" hidden><label>Tonnaj / yük götürmə (kq) *<input name="kg" type="number" min="0" max="100000" placeholder="məs. 3500"></label></div>
+      <div id="fSeat" hidden><label>Sərnişin yerlərinin sayı *<input name="seats" type="number" min="1" max="200" placeholder="məs. 18"></label></div>
+      <label>Qeydiyyat ünvanı *<input name="region" list="dlReg" required placeholder="Yazın: məs. Sumqayıt"></label><datalist id="dlReg">${opt(REGIONS)}</datalist>
+      <label>Sığorta haqqı (AZN) <small class="muted">(bilirsinizsə — məbləği hesablamaq üçün)</small><input name="premium" type="number" min="0" step="0.01"></label>
+      <button class="btn wide">Hesabla</button></form></div>
+      <div class="card"><h2 style="margin-top:0">Nəticə</h2><div id="cRes" class="muted">Məlumatları doldurub "Hesabla" basın.</div></div></div>
+    <dialog id="dCar"><form id="fCar"><h2>Yeni marka / model</h2>
+      <label>Marka<input name="make" list="dlMake" required></label><label>Model<input name="model" required></label>
+      <div class="row"><button class="btn">Əlavə et</button><button type="button" class="btn ghost" onclick="dCar.close()">Ləğv et</button></div></form></dialog>
+    ${F ? `<div class="card" style="margin-top:16px"><h2 style="margin-top:0">Agentlərin əlavə etdiyi markalar (${cars.length})</h2>
+      ${cars.length ? `<table><tr><th>Marka</th><th>Model</th><th>Əlavə edən</th><th>Tarix</th><th></th></tr>${cars.slice().reverse().map(k => `<tr><td>${e(k.make)}</td><td>${e(k.model)}</td><td>${e(U(k.user_id)?.name || '—')}</td><td>${e(k.created_at || '')}</td><td>${k.ok ? '✓ təsdiq' : `<button class="link" data-okcar="${k.id}">təsdiqlə</button>`} <button class="link" data-delcar="${k.id}" style="color:#dc2626">sil</button></td></tr>`).join('')}</table>` : '<p class="muted">Hələ yoxdur.</p>'}</div>
+      <div class="card" style="margin-top:16px"><h2 style="margin-top:0">Tariflər (şirkətlər və qaydalar)</h2>
+      <p class="muted" style="font-size:13px">Şirkət əlavə etmək, faizləri və qadağa markalarını (<b>banMakes</b>) dəyişmək üçün aşağıdakı mətni redaktə edib saxlayın. Qaydalar yuxarıdan aşağı yoxlanılır — birinci uyğun gələn tətbiq olunur.</p>
+      <textarea id="cfgTxt" style="width:100%;min-height:260px;font-family:monospace;font-size:12px">${e(JSON.stringify({ companies: cfgNow().companies }, null, 1))}</textarea>
+      <div class="row"><button class="btn" id="cfgSave" type="button">Tarifləri saxla</button><button class="btn ghost" id="cfgReset" type="button">Standarta qaytar</button></div></div>` : ''}`);
+  const f = $('#cf'), typeSel = f.type;
+  const sync = () => { const t = typeSel.value;
+    $('#fCc').hidden = t !== 'minik'; $('#fKg').hidden = t !== 'yuk'; $('#fSeat').hidden = t !== 'avtobus';
+    f.cc.required = t === 'minik' && !f.electric.checked; f.kg.required = t === 'yuk'; f.seats.required = t === 'avtobus'; };
+  typeSel.onchange = sync; f.electric.onchange = sync; sync();
+  const fillModels = () => { const mk = allMakes.find(x => nrm(x) === nrm(f.make.value)) || f.make.value;
+    $('#dlModel').innerHTML = opt([...new Set([...(CARS[mk] || []), ...(extraMakes[mk] || [])])]); };
+  f.make.oninput = fillModels; f.make.onchange = fillModels;
+  $('#addCar').onclick = ev => { ev.preventDefault(); $('#fCar').reset(); $('#fCar').make.value = f.make.value; $('#dCar').showModal(); };
+  $('#fCar').onsubmit = ev => { ev.preventDefault(); const g = new FormData(ev.target), mk = g.get('make').trim(), md = g.get('model').trim();
+    if (!mk || !md) return;
+    const known = allMakes.find(x => nrm(x) === nrm(mk)) || mk;
+    if ([...(CARS[known] || []), ...(extraMakes[known] || [])].some(x => nrm(x) === nrm(md))) { $('#dCar').close(); f.make.value = known; fillModels(); f.model.value = md; return; }
+    S.cars = S.cars || []; S.cars.push({ id: nid('k'), make: known, model: md, user_id: u.id, created_at: now(), ok: isF(u) });
+    const mv = { person: f.person.value, type: f.type.value, cc: f.cc.value, kg: f.kg.value, seats: f.seats.value, region: f.region.value, premium: f.premium.value, electric: f.electric.checked };
+    save(); toast('Əlavə edildi: ' + known + ' ' + md); render();
+    const f2 = $('#cf'); Object.entries(mv).forEach(([k, v]) => { if (k === 'electric') f2.electric.checked = v; else f2[k].value = v; });
+    f2.make.value = known; f2.make.dispatchEvent(new Event('input')); f2.model.value = md; f2.type.dispatchEvent(new Event('change')); };
+  f.onsubmit = ev => { ev.preventDefault();
+    const reg = REGIONS.find(x => nrm(x) === nrm(f.region.value));
+    if (!reg) return $('#cRes').innerHTML = '<div class="flash err">Qeydiyyat ünvanını siyahıdan seçin.</div>';
+    const q = { person: f.person.value, type: f.type.value, make: f.make.value.trim(), model: f.model.value.trim(), cc: +f.cc.value || 0, kg: +f.kg.value || 0,
+      seats: +f.seats.value || 0, region: reg, electric: f.electric.checked, premium: +f.premium.value || 0 };
+    const res = calcAll(q, myCutOf(u));
+    $('#cRes').innerHTML = `<p class="muted" style="margin-top:0">${e(q.make)} ${e(q.model)} · ${TYPES[q.type]}${q.type === 'minik' ? (q.electric ? ' · Elektromobil' : ' · ' + q.cc + ' sm³') : q.type === 'yuk' ? ' · ' + q.kg + ' kq' : q.type === 'avtobus' ? ' · ' + q.seats + ' yer' : ''} · ${e(reg)} · ${q.person === 'fiz' ? 'Fiziki' : 'Hüquqi'}</p>
+      <table><tr><th>Şirkət</th><th>Vəziyyət</th><th>Komissiya</th><th>Məbləğ</th></tr>${res.map(r => `<tr><td><b>${e(r.co)}</b>${r.note ? `<br><small class="muted">${e(r.note)}</small>` : ''}</td>
+        <td>${r.st === 'ok' ? '✅ Olar' : r.st === 'ban' ? '<b style="color:#dc2626">❌ Qadağa</b>' : '⏳ Məlumat yoxdur'}</td>
+        <td>${r.st === 'ok' && r.pct != null ? `<b style="font-size:1.15em;color:#16a34a">${r.pct}%</b>` : '—'}</td>
+        <td>${r.st === 'ok' && r.amt != null ? `${r.amt} AZN${r.prem ? `<br><small class="muted">haqq: ${r.prem} AZN</small>` : ''}` : '—'}</td></tr>`).join('')}</table>`; };
+  if (F) {
+    document.querySelectorAll('[data-okcar]').forEach(b => b.onclick = () => { const k = S.cars.find(x => x.id === +b.dataset.okcar); k.ok = true; save(); render(); });
+    document.querySelectorAll('[data-delcar]').forEach(b => b.onclick = () => { if (!confirm('Silinsin?')) return; S.cars = S.cars.filter(x => x.id !== +b.dataset.delcar); save(); render(); });
+    $('#cfgSave').onclick = () => { let j; try { j = JSON.parse($('#cfgTxt').value); if (!Array.isArray(j.companies)) throw 0; } catch (err) { return alert('Mətndə səhv var (JSON formatı pozulub).'); }
+      S.cfg = [{ id: 1, companies: j.companies }]; save(); toast('Tariflər saxlanıldı.'); render(); };
+    $('#cfgReset').onclick = () => { if (!confirm('Tariflər standart (göndərilən fayllardakı) vəziyyətə qaytarılsın?')) return; S.cfg = [{ id: 1, companies: DEFAULT_CFG.companies }]; save(); render(); };
+  }
+}
+// Hər səhifədə sol aşağıda "Kalkulyator" düyməsi (menyu düymələrinin yerini dəyişmir)
+function calcFab(page){
+  document.getElementById('calcFab')?.remove(); if (page === 'calc') return;
+  const a = document.createElement('a'); a.id = 'calcFab'; a.href = '#calc'; a.textContent = '🧮 Kalkulyator';
+  a.style.cssText = 'position:fixed;left:18px;bottom:18px;z-index:8000;background:#1d4ed8;color:#fff;border-radius:999px;padding:12px 18px;font-weight:700;text-decoration:none;box-shadow:0 8px 24px #0004';
+  document.body.appendChild(a);
+}
+
 function render(){
   document.getElementById('watchBox')?.remove();
   const [path, q] = location.hash.slice(1).split('?'), qs = new URLSearchParams(q || ''), [page, arg] = (path || 'home').split('/');
@@ -675,7 +968,7 @@ function render(){
   const u = me();
   if (!u) return pLogin();
   window.scrollTo(0, 0);
-  ({ home:pHome, docs:pDocs, done:(u, q) => pDocs(u, q, true), wait:(u, q) => pDocs(u, q, 'wait'), new:pNew, doc:pDoc, team:pTeam, profile:pProfile }[page] || pHome)(u, page === 'doc' ? arg : qs);
+  ({ home:pHome, docs:pDocs, done:(u, q) => pDocs(u, q, true), calc:pCalc, wait:(u, q) => pDocs(u, q, 'wait'), new:pNew, doc:pDoc, team:pTeam, profile:pProfile }[page] || pHome)(u, page === 'doc' ? arg : qs);
 }
 // Bir dəfəlik: qurucunun girişi Kod ADMIN / Parol 123
 (async () => {
