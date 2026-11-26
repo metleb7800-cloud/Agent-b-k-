@@ -786,8 +786,8 @@ const SEN_A = ['Bakı','Abşeron','Sumqayıt','Gəncə','Cəbrayıl','Füzuli','
 const DEFAULT_CFG = { id: 1, companies: [
   { name: 'ATƏŞGAH Sığorta', banMakes: [], banNote: 'ATƏŞGAH qadağa markaları siyahısı verilməyib — qurucu əlavə etməlidir', rules: [
     // VAZ / LADA
-    { type:'minik', person:'fiz', makes:['Lada','VAZ'], ccMin:0, ccMax:1500, premium:85, pct:0, amount:0 },
-    { type:'minik', person:'fiz', makes:['Lada','VAZ'], ccMin:1501, ccMax:2000, premium:99, pct:14.14, amount:14 },
+    { type:'minik', person:'fiz', makes:['Lada','VAZ'], ccMin:0, ccMax:1500, premium:85, pct:15 },
+    { type:'minik', person:'fiz', makes:['Lada','VAZ'], ccMin:1501, ccMax:2000, premium:99, pct:15 },
     // Qadağa siyahısındakı markalar (banMakes) — ayrıca tarif
     { type:'minik', banList:true, ccMin:0, ccMax:1500, premium:95, pct:5, amount:4.75 },
     { type:'minik', banList:true, ccMin:1501, ccMax:2000, premium:95, amount:-5, note:'Cərimə ödəyəcəksən' },
@@ -795,14 +795,14 @@ const DEFAULT_CFG = { id: 1, companies: [
     { type:'minik', banList:true, ccMin:2501, ccMax:3000, pending:true, note:'Mənbədə natamamdır' },
     { type:'minik', banList:true, ccMin:3001, ccMax:99999, premium:115, pct:20, note:'Mənbədə cədvəllər uyğun gəlmir — dəqiqləşdirin' },
     { type:'minik', banList:true, electric:true, premium:120, pct:0 },
-    // Fiziki minik
-    { type:'minik', person:'fiz', electric:true, premium:200, pct:5, amount:10 },
-    { type:'minik', person:'fiz', ccMin:0, ccMax:1500, premium:111, pct:14.41, amount:16 },
-    { type:'minik', person:'fiz', ccMin:1501, ccMax:2000, premium:127, pct:11.81, amount:15 },
-    { type:'minik', person:'fiz', ccMin:2001, ccMax:2500, premium:126, pct:15, amount:18.9 },
-    { type:'minik', person:'fiz', ccMin:2501, ccMax:3000, premium:146, pct:24.66, amount:36 },
-    { type:'minik', person:'fiz', ccMin:3001, ccMax:3500, premium:169, pct:34.91, amount:59 },
-    { type:'minik', person:'fiz', ccMin:3501, ccMax:99999, premium:200, pct:35, amount:70 },
+    // Fiziki minik — faiz: cədvəldəki "Maksimum komissiya faizi"
+    { type:'minik', person:'fiz', electric:true, premium:200, pct:5 },
+    { type:'minik', person:'fiz', ccMin:0, ccMax:1500, premium:111, pct:15 },
+    { type:'minik', person:'fiz', ccMin:1501, ccMax:2000, premium:127, pct:12 },
+    { type:'minik', person:'fiz', ccMin:2001, ccMax:2500, premium:126, pct:15 },
+    { type:'minik', person:'fiz', ccMin:2501, ccMax:3000, premium:146, pct:25 },
+    { type:'minik', person:'fiz', ccMin:3001, ccMax:3500, premium:169, pct:35 },
+    { type:'minik', person:'fiz', ccMin:3501, ccMax:99999, premium:200, pct:35 },
     // Hüquqi minik
     { type:'minik', person:'huq', electric:true, premium:500, pct:0, amount:0 },
     { type:'minik', person:'huq', ccMin:0, ccMax:2500, pending:true, note:'Mənbədə göstərilməyib' },
