@@ -187,6 +187,44 @@ function shell(u, page, body){
     <nav>${a('home','Panel')}${a('docs','Sənədlər'+(n?` <b class="dot">${n}</b>`:''))}${a('new','+ Sənəd göndər')}${a('team','Komanda')}${a('done','✓ Təsdiqlənənlər')}</nav>
     <div class="who" style="position:relative">${true ? `<img src="${avOf(u)}" alt="" style="position:absolute;right:100%;top:50%;transform:translateY(-50%);margin-right:8px;width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #fff">` : ''}${e(u.name)} <small>${roleName(u)}</small> <a href="#profile">Profil</a> · <a href="#logout">Çıxış</a></div></header>
     <main>${f ? `<div class="flash ${f[1]}">${e(f[0])}</div>` : ''}${body}</main>`;
+  drawWatch();
+}
+// ---------- Göndərilən sənədin İSB gedişatı (ekranın üstündə ayrıca pəncərə — düymələr yerindən oynamır) ----------
+const watchGet = () => +(sessionStorage.getItem('agentnet_watch') || 0);
+const watchSet = id => id ? sessionStorage.setItem('agentnet_watch', id) : sessionStorage.removeItem('agentnet_watch');
+function isbParts(d){
+  const t = String(d.review_note || '').split(/\t|\n| {2,}/).map(x => x.trim()).filter(Boolean);
+  return { pat: t.find(x => /^[A-Z]{2,5}\d{6,}$/.test(x)) || d.isb_code || '', dt: t.find(x => /^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}/.test(x)) || '',
+    st: t.find(x => /gözləyir|ödənil|qüvvə/i.test(x)) || '', pay: t.find(x => /^\d{10,14}$/.test(x)) || '', sum: t.find(x => /^\d+\.\d{2}$/.test(x)) || '' };
+}
+function drawWatch(){
+  document.getElementById('watchBox')?.remove();
+  const id = watchGet(); if (!id) return;
+  const d = S.docs.find(x => x.id === id); if (!d) return watchSet(0);
+  const lastLog = S.log.filter(l => l.document_id === id).slice(-1)[0];
+  const row = (k, v, big) => v ? `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #eee"><span style="width:120px;color:#6b7280">${k}</span><b style="${big ? 'font-size:22px;color:#16a34a' : ''}">${e(v)}</b><button class="wcp" data-v="${e(v)}" style="margin-left:auto;border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer;padding:3px 8px">📋</button></div>` : '';
+  let html;
+  if (d.status === 'tesdiq') { const p = isbParts(d);
+    html = `<div style="font-size:40px">✅</div><h2 style="margin:4px 0 2px">İSB-də imzalandı</h2><p class="muted" style="margin:0 0 10px">${e(d.dqn)}</p>
+      ${row('Ödəniş kodu', p.pay, true)}${row('PAT kodu', p.pat)}${row('Tarix', p.dt)}${row('Status', p.st)}${row('Məbləğ', p.sum ? p.sum + ' AZN' : '')}${!p.pay && !p.pat && d.review_note ? `<p style="white-space:pre-wrap">${e(d.review_note)}</p>` : ''}`;
+  } else if (d.status === 'redd') {
+    html = `<div style="font-size:40px">❌</div><h2 style="margin:4px 0 2px">Rədd edildi</h2><p class="muted" style="margin:0 0 10px">${e(d.dqn)}</p>
+      <p style="white-space:pre-wrap;background:#fef2f2;color:#991b1b;padding:10px;border-radius:8px">${e(d.review_note || 'Səbəb yazılmayıb')}</p>
+      ${d.user_id === me()?.id ? `<a class="btn" href="#new?edit=${d.id}" id="wEdit" style="display:inline-block;margin-top:6px">Düzəlt və yenidən göndər</a>` : ''}`;
+  } else {
+    html = `<div class="wspin" style="width:46px;height:46px;border:5px solid #dbeafe;border-top-color:#2563eb;border-radius:50%;margin:0 auto 10px;animation:wsp 1s linear infinite"></div>
+      <h2 style="margin:4px 0 2px">İSB-də doldurulur…</h2><p class="muted" style="margin:0">${e(d.dqn)} · ${e(d.created_at || '')}</p>
+      <p style="margin:12px 0 0">${e(lastLog && /Robot/.test(lastLog.action) ? lastLog.action : 'Sənəd növbədədir, robot götürəcək.')}</p>
+      <p class="muted" style="font-size:13px">Bu pəncərə nəticə gələn kimi özü yenilənəcək.</p>`;
+  }
+  document.body.insertAdjacentHTML('beforeend', `<div id="watchBox" style="position:fixed;inset:0;background:#0f172a99;z-index:9998;display:flex;align-items:center;justify-content:center">
+    <style>@keyframes wsp{to{transform:rotate(360deg)}}</style>
+    <div style="background:#fff;color:#111;border-radius:16px;padding:24px 26px;width:min(460px,92vw);text-align:center;box-shadow:0 20px 60px #0006">
+      ${html}<div style="margin-top:14px"><button id="wClose" class="btn ghost" style="background:#e5e7eb;color:#111">Bağla</button></div></div></div>`);
+  document.querySelectorAll('#watchBox .wcp').forEach(b => b.onclick = () => { const v = b.dataset.v;
+    (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(() => b.textContent = '✓', () => prompt('Kopyalayın:', v)); });
+  $('#wClose').onclick = () => { watchSet(0); document.getElementById('watchBox')?.remove(); };
+  if ($('#wEdit')) $('#wEdit').onclick = () => watchSet(0);
 }
 // Qeyddəki İSB sətrindən əsas hissələr: PAT kodu, tarix-saat, status, DQN, ödəniş kodu, məbləğ
 // Qeyddəki İSB sətrindən ödəniş kodu (məs. 400016134242)
@@ -206,7 +244,7 @@ function docTable(rows){
   if (!rows.length) return '<p class="muted">Sənəd yoxdur.</p>';
   return `<div class="tbl"><table><tr><th>#</th><th>Başlıq</th><th>Telefon</th><th>Göndərən</th><th>Status</th><th>Tarix</th></tr>${
     rows.map(d => `<tr onclick="location.hash='doc/${d.id}'"><td>${d.id}</td><td><a href="#doc/${d.id}">${e(d.title)}</a>${isbLine(d) ? `<br><small style="white-space:nowrap;color:#166534;font-weight:600">${isbLine(d)}</small>` : d.doc_type?`<br><small class="muted">${e(d.doc_type)}</small>`:''}</td>
-      <td>${e((d.customer_phone || '').replace(/^0/, ''))}</td><td>${e(U(d.user_id)?.name)}</td><td>${badge(d.status)}</td><td><small>${d.created_at}</small></td></tr>`).join('')}</table></div>`;
+      <td>${e((d.customer_phone || '').replace(/^0/, ''))}</td><td>${e(U(d.user_id)?.name || d.from_name)}</td><td>${badge(d.status)}</td><td><small>${d.created_at}</small></td></tr>`).join('')}</table></div>`;
 }
 
 // ---------- SƏHİFƏLƏR ----------
@@ -337,7 +375,7 @@ function pNew(u, qs){
       }
       logAdd(ed.id, u.id, 'düzəltdi və yenidən göndərdi');
       if (!save()) { S = load(); return; }
-      toast('Düzəldildi və yenidən göndərildi.'); return go('#docs');
+      toast('Düzəldildi və yenidən göndərildi.'); watchSet(ed.id); return go('#docs');
     }
     const id = nid('d');
     S.docs.push({ id, user_id:u.id, path:u.path, title: dqn + (f.get('doc_type').trim() ? ' — ' + f.get('doc_type').trim() : ''),
@@ -351,7 +389,7 @@ function pNew(u, qs){
     }
     logAdd(id, u.id, 'göndərdi');
     if (!save()) { S = load(); return; }
-    toast(isF(u) ? 'Sənəd əlavə edildi.' : 'Sənəd göndərildi — qurucuya düşdü.'); go('#docs'); };
+    toast(isF(u) ? 'Sənəd əlavə edildi.' : 'Sənəd göndərildi — qurucuya düşdü.'); watchSet(id); go('#docs'); };
 }
 
 function pDoc(u, id){
@@ -364,7 +402,7 @@ function pDoc(u, id){
   const sn = v => { const m = (v || '').match(/^([A-Z]+)(\d+)$/); return m ? [m[1], m[2]] : [v || '', '']; };
   const [dlS, dlN] = sn(d.license), ph = (d.customer_phone || '').replace(/\D/g, ''), birth = d.birth ? d.birth.split('-').reverse().join('.') : '';
   shell(u, '', `<a href="#docs">← Sənədlər</a><h1>#${d.id} ${e(d.title)} ${badge(d.status)}</h1>${isF(u) ? `<p class="muted">Yol: ${chain(d.path)}</p>` : ""}
-    <div class="grid2"><div class="card"><dl class="kv">${kv('Göndərən', e(U(d.user_id)?.name), U(d.user_id)?.name)}${kv('Tarix', d.created_at, d.created_at)}
+    <div class="grid2"><div class="card"><dl class="kv">${kv('Göndərən', e(U(d.user_id)?.name || d.from_name), U(d.user_id)?.name || d.from_name)}${kv('Tarix', d.created_at, d.created_at)}
       ${kv('DQN', e(d.dqn), d.dqn)}${kv('Texpasport', e(d.texpasport), d.texpasport)}${kv('FİN', e(d.fin), d.fin)}
       ${kv('Vəsiqə', e(d.id_card), d.id_card)}${kv('Doğum tarixi', e(birth), birth)}
       ${kv('Prava seriyası', e(dlS), dlS)}${kv('Prava nömrəsi', e(dlN), dlN)}${kv('Növ', e(d.doc_type), d.doc_type)}
@@ -431,7 +469,7 @@ function pTeam(u){
       ${isF(u) ? `<a class="pill" href="#docs?who=${x.id}">${mine.length} sənəd · ${mine.filter(d=>d.status==='tesdiq').length} ✓</a>` : ''}
       ${kids.length ? `<small class="muted">${kids.length} alt</small>` : ''}
       <span class="acts">${x.active ? `<button class="link" data-add="${x.id}">+ alt əlavə et</button>` : ''}
-      ${x.id !== u.id ? `<button class="link" data-ed="${x.id}">kod / parol</button><button class="link" data-tg="${x.id}">${x.active?'deaktiv et':'aktiv et'}</button>` : ''}</span></div>
+      ${x.id !== u.id ? `<button class="link" data-ed="${x.id}">kod / parol</button><button class="link" data-del="${x.id}" style="color:#dc2626">sil</button>` : ''}</span></div>
       ${kids.length ? `<ul>${kids.map(node).join('')}</ul>` : ''}</li>`;
   };
   shell(u, 'team', `${sendCard()}<h1>Komanda ağacı</h1><p class="muted">Siz öz budağınızdakı hər kəsi görür və idarə edirsiniz. Hər kəs öz altına yeni agent aça bilər.</p>
@@ -457,8 +495,11 @@ function pTeam(u){
     $('#tEd').textContent = target.name + ' — kod / parol'; $('#eEd').innerHTML = '';
     $('#fEd').reset(); const [op = '', no = ''] = (target.phone || '').split(' '); $('#fEd').op.value = op; $('#fEd').phone_no.value = no;
     $('#fEd').code.value = target.code; $('#dEd').showModal(); });
-  document.querySelectorAll('[data-tg]').forEach(b => b.onclick = () => { const t = U(b.dataset.tg); t.active = !t.active; save();
-    flash(t.name + (t.active ? ' aktiv edildi.' : ' deaktiv edildi (daxil ola bilməz).')); render(); });
+  document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { const t = U(b.dataset.del);
+    if (S.users.some(k => k.parent_id === t.id)) return alert(`“${t.name}” altında agentlər var. Əvvəlcə onları silin.`);
+    if (!confirm(`“${t.name}” (kod ${t.code}) tam silinsin? Bu geri qaytarılmır.\nGöndərdiyi sənədlər qurucuda qalacaq.`)) return;
+    if (isF(u)) S.docs.filter(d => d.user_id === t.id).forEach(d => d.from_name = t.name);
+    S.users = S.users.filter(k => k.id !== t.id); save(); toast(t.name + ' silindi.'); render(); });
   $('#fAdd').onsubmit = async ev => { ev.preventDefault(); const f = new FormData(ev.target), code = f.get('code').trim().toUpperCase(), err = m => $('#eAdd').innerHTML = `<div class="flash err">${m}</div>`;
     if (!codeOk(code)) return err('Kod 3–12 simvol olmalıdır (rəqəm və ya hərf).');
     if (codeTaken(code, 0)) return err('Bu kod artıq başqasındadır.');
