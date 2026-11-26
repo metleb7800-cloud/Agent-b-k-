@@ -113,10 +113,11 @@ const nid = k => { const r = xhr('GET', 'a=nid&k=' + k); if (!r || !r.ok) { aler
 let S = load();
 // Yeni sənədlər / dəyişikliklər üçün serveri yoxla (2 san.)
 setInterval(async () => {
-  if (!SRV.uid || diff()) return;
+  if (!SRV.uid) return;
   try {
     const r = await (await fetch(API + '?a=state&rev=' + SRV.rev + '&uid=' + SRV.uid, { cache:'no-store' })).json();
-    if (!r.ok || r.same || diff()) return;
+    if (!r.ok || r.same) return;
+    if (diff()) { cacheForRobot(r.state || {}); return; } // saxlanmamış dəyişiklik var — yalnız robot üçün yaddaşı yenilə
     S = setState(r);
     const ae = document.activeElement, page = (location.hash.slice(1).split('?')[0] || 'home').split('/')[0];
     const busy = (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) || document.querySelector('dialog[open]');
@@ -187,7 +188,7 @@ function shell(u, page, body){
     <nav>${a('home','Panel')}${a('docs','Sənədlər'+(n?` <b class="dot">${n}</b>`:''))}${a('new','+ Sənəd göndər')}${a('team','Komanda')}${a('done','✓ Təsdiqlənənlər')}</nav>
     <div class="who" style="position:relative">${true ? `<img src="${avOf(u)}" alt="" style="position:absolute;right:100%;top:50%;transform:translateY(-50%);margin-right:8px;width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #fff">` : ''}${e(u.name)} <small>${roleName(u)}</small> <a href="#profile">Profil</a> · <a href="#logout">Çıxış</a></div></header>
     <main>${f ? `<div class="flash ${f[1]}">${e(f[0])}</div>` : ''}${body}</main>`;
-  drawWatch();
+  drawWatch(page);
 }
 // ---------- Göndərilən sənədin İSB gedişatı (ekranın üstündə ayrıca pəncərə — düymələr yerindən oynamır) ----------
 const watchGet = () => +(sessionStorage.getItem('agentnet_watch') || 0);
@@ -197,9 +198,9 @@ function isbParts(d){
   return { pat: t.find(x => /^[A-Z]{2,5}\d{6,}$/.test(x)) || d.isb_code || '', dt: t.find(x => /^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}/.test(x)) || '',
     st: t.find(x => /gözləyir|ödənil|qüvvə/i.test(x)) || '', pay: t.find(x => /^\d{10,14}$/.test(x)) || '', sum: t.find(x => /^\d+\.\d{2}$/.test(x)) || '' };
 }
-function drawWatch(){
+function drawWatch(page){
   document.getElementById('watchBox')?.remove();
-  const id = watchGet(); if (!id) return;
+  const id = watchGet(); if (!id || page === 'new') return;
   const d = S.docs.find(x => x.id === id); if (!d) return watchSet(0);
   const lastLog = S.log.filter(l => l.document_id === id).slice(-1)[0];
   const row = (k, v, big) => v ? `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #eee"><span style="width:120px;color:#6b7280">${k}</span><b style="${big ? 'font-size:22px;color:#16a34a' : ''}">${e(v)}</b><button class="wcp" data-v="${e(v)}" style="margin-left:auto;border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer;padding:3px 8px">📋</button></div>` : '';
