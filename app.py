@@ -85,6 +85,18 @@ def state_for(c, V):
 def index():
     r = send_from_directory(HERE, 'index.html'); r.headers['Cache-Control'] = 'no-cache'; return r
 
+@app.route('/app.apk')
+def apk():
+    p = os.path.join(HERE, 'app.apk')
+    if not os.path.exists(p): return ('APK hələ yüklənməyib', 404)
+    return send_from_directory(HERE, 'app.apk', mimetype='application/vnd.android.package-archive', as_attachment=True, download_name='AgentSebekesi.apk')
+
+@app.route('/.well-known/assetlinks.json')
+def assetlinks():
+    p = os.path.join(HERE, 'assetlinks.json')
+    if not os.path.exists(p): return ('[]', 200, {'Content-Type': 'application/json'})
+    return send_from_directory(HERE, 'assetlinks.json', mimetype='application/json')
+
 @app.route('/manifest.json')
 @app.route('/sw.js')
 @app.route('/icon-192.png')
