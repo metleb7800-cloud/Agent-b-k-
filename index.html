@@ -302,7 +302,7 @@ function dlButton(){
 }
 function pLogin(){
   app().innerHTML = `<main class="narrow"><div class="card"><h1>Agent Şəbəkəsi</h1><div id="err"></div>
-    <form id="f"><label>Kod<input name="code" required autofocus inputmode="numeric" autocomplete="username" placeholder="Giriş kodunuz"></label>
+    <form id="f"><label>Kod<input name="code" required autofocus autocomplete="username" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="Giriş kodunuz"></label>
     <label>Parol<input type="password" name="password" required></label><button class="btn wide">Daxil ol</button></form></div></main>`;
   dlButton();
   $('#f').onsubmit = async ev => { ev.preventDefault(); const f = new FormData(ev.target);
