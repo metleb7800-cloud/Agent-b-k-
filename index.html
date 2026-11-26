@@ -213,7 +213,7 @@ function isbParts(d){
     st: t.find(x => /gözləyir|ödənil|qüvvə/i.test(x)) || '', pay: t.find(x => /^\d{10,14}$/.test(x)) || '', sum: t.find(x => /^\d+\.\d{2}$/.test(x)) || '' };
 }
 function drawWatch(page){
-  document.getElementById('watchBox')?.remove();
+  document.getElementById('watchBox')?.remove(); document.getElementById('dlApp')?.remove();
   const id = watchGet(); if (!id || page === 'new') return;
   const d = S.docs.find(x => x.id === id); if (!d) return watchSet(0);
   const lastLog = S.log.filter(l => l.document_id === id).slice(-1)[0];
@@ -279,10 +279,32 @@ function pSetup(){
   $('#imp').onclick = ev => { ev.preventDefault(); importJSON(); };
 }
 
+// ---------- Tətbiqi yüklə düyməsi (yalnız giriş səhifəsində, sağ aşağıda) ----------
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
+function dlButton(){
+  if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) return; // artıq tətbiq kimi açılıb
+  const b = document.createElement('button'); b.id = 'dlApp'; b.type = 'button'; b.innerHTML = '📲 Tətbiqi yüklə';
+  b.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:9000;background:#16a34a;color:#fff;border:0;border-radius:999px;padding:13px 20px;font-size:16px;font-weight:700;box-shadow:0 8px 24px #0004;cursor:pointer';
+  b.onclick = async () => {
+    const ua = navigator.userAgent, ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (ios) return alert('iPhone-da quraşdırmaq:\n\n1) Bu səhifəni Safari ilə açın\n2) Aşağıdakı "Paylaş" ⬆️ düyməsinə basın\n3) "Ana ekrana əlavə et" seçin');
+    if (/Android/i.test(ua)) {
+      try { const r = await fetch('/app.apk', { method: 'HEAD' }); if (r.ok) { location.href = '/app.apk'; return; } } catch (e) {}
+      if (installEvt) { installEvt.prompt(); installEvt = null; return; }
+      return alert('Android-də quraşdırmaq:\n\nChrome menyusu ⋮ → "Tətbiqi quraşdır" (və ya "Ana ekrana əlavə et")');
+    }
+    if (installEvt) { installEvt.prompt(); installEvt = null; return; }
+    try { const r = await fetch('/app.apk', { method: 'HEAD' }); if (r.ok) { location.href = '/app.apk'; return; } } catch (e) {}
+    alert('Telefonda bu saytı açın və "Tətbiqi yüklə" düyməsinə basın.');
+  };
+  document.body.appendChild(b);
+}
 function pLogin(){
   app().innerHTML = `<main class="narrow"><div class="card"><h1>Agent Şəbəkəsi</h1><div id="err"></div>
     <form id="f"><label>Kod<input name="code" required autofocus inputmode="numeric" autocomplete="username" placeholder="Giriş kodunuz"></label>
     <label>Parol<input type="password" name="password" required></label><button class="btn wide">Daxil ol</button></form></div></main>`;
+  dlButton();
   $('#f').onsubmit = async ev => { ev.preventDefault(); const f = new FormData(ev.target);
     const k = f.get('code').trim().toUpperCase(); const r = xhr('POST', 'a=login', { code:k, pw: await hash(f.get('password')) });
     if (r && r.ok) { S = setState(r); go('#home'); }
