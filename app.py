@@ -19,7 +19,7 @@ with eng.begin() as c:
     c.execute(text("CREATE TABLE IF NOT EXISTS an_rec (kind VARCHAR(8) NOT NULL, id INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY (kind, id))"))
     c.execute(text("CREATE TABLE IF NOT EXISTS an_meta (k VARCHAR(32) NOT NULL PRIMARY KEY, v BIGINT NOT NULL DEFAULT 0)"))
 
-KINDS = {'users': 'u', 'docs': 'd', 'files': 'f', 'log': 'l'}
+KINDS = {'users': 'u', 'docs': 'd', 'files': 'f', 'log': 'l', 'cfg': 'c', 'cars': 'k'}
 
 class Fail(Exception):
     def __init__(self, msg, code=400): super().__init__(msg); self.code = code
@@ -59,7 +59,7 @@ def me(c):
 def state_for(c, V):
     base = {'ok': True, 'hasUsers': has_users(c), 'rev': meta(c, 'rev'), 'uid': int(V['id']) if V else 0}
     if not V:
-        base['state'] = {'users': [], 'docs': [], 'files': [], 'log': [], 'seq': {'u': 0, 'd': 0, 'f': 0, 'l': 0}}
+        base['state'] = {'users': [], 'docs': [], 'files': [], 'log': [], 'cfg': [], 'cars': [], 'seq': {k: 0 for k in KINDS.values()}}
         return base
     users, docs, files, log = rows(c, 'users'), rows(c, 'docs'), rows(c, 'files'), rows(c, 'log')
     vid = int(V['id']); anc = [i(x) for x in str(V.get('path', '')).split('/') if x]
@@ -67,6 +67,7 @@ def state_for(c, V):
     for id_, u in users.items():
         u = dict(u)
         if id_ != vid: u.pop('pw', None)
+        if id_ == vid and not isF(V): u.pop('cut', None)  # öz çıxılan faizini görmür
         if isF(V) or sw(u.get('path'), V.get('path')): UU.append(u)
         elif id_ in anc:
             UU.append({'id': id_, 'name': u.get('name'), 'role': u.get('role'), 'path': u.get('path'), 'depth': u.get('depth', 1),
@@ -77,6 +78,9 @@ def state_for(c, V):
                      'files': [f for f in files.values() if i(f.get('document_id')) in ids],
                      'log': [l for l in log.values() if i(l.get('document_id')) in ids],
                      'founderPreset': meta(c, 'founderPreset'),
+                     'cfg': list(rows(c, 'cfg').values()),
+                     'cars': [k for k in rows(c, 'cars').values() if isF(V) or i(k.get('user_id')) == vid or k.get('ok')],
+                     'myCut': 0 if isF(V) else sum(float(users.get(a, {}).get('cut') or 0) for a in anc),
                      'seq': {k: meta(c, 'seq_' + k) for k in KINDS.values()}}
     return base
 
@@ -170,7 +174,7 @@ def sync(c, inp):
             if not isF(V) and not sw(old.get('path'), V.get('path')): raise Fail('Bu istifadəçini dəyişməyə icazə yoxdur')
             if not r.get('pw'): r['pw'] = old.get('pw', '')
             for f in ('role', 'path', 'parent_id', 'depth'): r[f] = old.get(f)
-            if id_ == int(V['id']): r['active'] = old.get('active', True)
+            if id_ == int(V['id']): r['active'] = old.get('active', True); r['cut'] = old.get('cut', 0)
         else:
             p = users.get(i(r.get('parent_id')))
             if not p or (not isF(V) and not sw(p.get('path'), V.get('path'))): raise Fail('İcazə yoxdur')
@@ -213,6 +217,26 @@ def sync(c, inp):
         if id_ <= 0 or (id_ in log and not isF(V)) or not own(docs.get(i(r.get('document_id')))): continue
         if not isF(V): r['user_id'] = vid
         log[id_] = r; put(c, 'log', r)
+    # --- tariflər (yalnız qurucu) ---
+    cfg, cars = rows(c, 'cfg'), rows(c, 'cars')
+    for r in ch.get('cfg') or []:
+        if not isF(V): raise Fail('Tarifləri yalnız qurucu dəyişə bilər')
+        if i(r.get('id')) <= 0: raise Fail('Səhv tarif')
+        put(c, 'cfg', r)
+    # --- agentlərin əlavə etdiyi marka/model ---
+    for r in ch.get('cars') or []:
+        id_ = i(r.get('id')); old = cars.get(id_)
+        if id_ <= 0: raise Fail('Səhv marka')
+        if old and not isF(V) and i(old.get('user_id')) != vid: raise Fail('İcazə yoxdur')
+        if not old: r['user_id'] = vid
+        if not isF(V): r['ok'] = (old or {}).get('ok', False)
+        if len(str(r.get('make', ''))) > 60 or len(str(r.get('model', ''))) > 60: raise Fail('Ad çox uzundur')
+        put(c, 'cars', r)
+    for id_ in dl.get('cfg') or []:
+        if isF(V): delete(c, 'cfg', i(id_))
+    for id_ in dl.get('cars') or []:
+        k = cars.get(i(id_))
+        if k and (isF(V) or i(k.get('user_id')) == vid): delete(c, 'cars', i(id_))
     # --- silinmələr ---
     for id_ in dl.get('docs') or []:
         id_ = i(id_); d = docs.get(id_)
@@ -242,3 +266,4 @@ def sync(c, inp):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8000)))
+  
