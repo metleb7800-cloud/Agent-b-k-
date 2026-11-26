@@ -742,6 +742,13 @@ const CARS = {
   'Howo (Sinotruk)':['A7','T7H','TX'],
   'Lifan':['Solano','X60','Smily'],
   'Great Wall':['Wingle','Hover','Poer'],
+  'Jetour':['X70','X90','Dashing','T2'],
+  'Khazar':['LX','SD'],
+  'VGV':['U70','U75'],
+  'Dayun':['Yuehu'],
+  'MG':['MG3','MG5','MG ZS','MG HS','MG4','Marvel R'],
+  'Dacia':['Logan','Sandero','Duster','Dokker','Lodgy'],
+  'ZAZ':['Lanos','Sens','Vida','Tavria'],
   'Ssangyong':['Rexton','Kyron','Actyon','Korando','Tivoli'],
   'Fiat':['Doblo','Ducato','Linea','Albea','500','Punto'],
   'Mini':['Cooper','Countryman','Clubman'],
@@ -773,6 +780,8 @@ const REG_GROUPS = {
 // Qayda sahələri: type (minik/yuk/avtobus/motosikl/qosqu/texnika/serhed), person (fiz/huq), ccMin/ccMax, kgMin/kgMax, seatMin/seatMax,
 // electric (true/false), makes / makesNot (marka adının hissəsi), regions / regionsNot, ban (qadağa), pct (komissiya faizi), premium (sığorta haqqı), amount (komissiya AZN), note
 const ATG_A = ['Bakı','Sumqayıt','Abşeron','Ağdam','Füzuli','Qubadlı','Zəngilan','Cəbrayıl','Laçın','Kəlbəcər','Şuşa','Xankəndi','Ağdərə','Xocalı','Xocavənd'];
+const PASA_A = ['Abşeron','Bakı','Sumqayıt','Gəncə'];
+const SOVET = ['Lada','VAZ','GAZ','QAZ','UAZ','Moskvich','ZAZ','IJ','Izh'];
 const SEN_A = ['Bakı','Abşeron','Sumqayıt','Gəncə','Cəbrayıl','Füzuli','Laçın','Qubadlı','Şuşa','Xankəndi','Xocalı','Zəngilan'];
 const DEFAULT_CFG = { id: 1, companies: [
   { name: 'ATƏŞGAH Sığorta', banMakes: [], banNote: 'ATƏŞGAH qadağa markaları siyahısı verilməyib — qurucu əlavə etməlidir', rules: [
@@ -808,7 +817,8 @@ const DEFAULT_CFG = { id: 1, companies: [
     { type:'yuk', person:'huq', pending:true, note:'Hüquqi yük limit modeli mənbədə qarışıqdır — dəqiqləşdirin' },
     // Digər
     { type:'motosikl', premium:75, pct:-6.67, amount:-5 },
-    { type:'qosqu', pct:10, note:'Yük maşını ilə birlikdə sığortalansa; əks halda 0%' },
+    { type:'qosqu', tow:true, pct:10, note:'Yük maşını ilə birlikdə' },
+    { type:'qosqu', tow:false, pct:0, note:'Yük maşını olmadan — 0%' },
     { type:'texnika', pct:20 },
     { type:'avtobus', pct:0 },
     { type:'serhed', pct:0 },
@@ -832,9 +842,46 @@ const DEFAULT_CFG = { id: 1, companies: [
     { type:'yuk', person:'huq', kgMin:7001, kgMax:999999, pct:32 },
     { type:'yuk', person:'fiz', kgMin:7001, kgMax:999999, pct:33 },
   ]},
-  { name: 'PAŞA Sığorta', banMakes: [], rules: [], pendingAll: 'Tariflər hələ daxil edilməyib' },
+  { name: 'PAŞA Sığorta', banMakes: [], huqIndividual: 'Avtonəqliyyata aid hüquqi şəxslər fərdi baxılır', rules: [
+    // Sovet istehsalı (0–2000)
+    { type:'minik', makes:SOVET, ccMin:0, ccMax:2000, premMax:75, pct:5, note:'Sovet istehsalı, haqq ≤ 75 AZN' },
+    { type:'minik', makes:SOVET, ccMin:0, ccMax:2000, premMin:75.01, pct:10, note:'Sovet istehsalı, haqq > 75 AZN' },
+    // Elektromobil
+    { type:'minik', electric:true, ban:true, makes:['Tesla','Zeekr','Chevrolet','Dayun','DongFeng','Toyota','MG'], note:'Elektromobil — bu marka qadağadır' },
+    { type:'minik', electric:true, pct:10 },
+    // 0–1500
+    { type:'minik', ccMin:0, ccMax:1500, yearMin:2022, ban:true, makes:['Honda','Nissan','KIA','Chevrolet','Toyota','Changan','BYD','FIAT'], note:'0–1500, 2022-dən — qadağa' },
+    { type:'minik', ccMin:0, ccMax:1500, pct:5 },
+    // 1501–2000
+    { type:'minik', ccMin:1501, ccMax:2000, regions:PASA_A, yearMin:2020, ban:true, makes:['Chevrolet','Ford','GreatWall','Great Wall','Jetour','Lada','VAZ','Renault','VGV','Honda','BMW','FAW','Khazar','Jeep','Kia','Volkswagen'], note:'1501–2000, Abşeron/Bakı/Sumqayıt/Gəncə, 2020-dən — qadağa' },
+    { type:'minik', ccMin:1501, ccMax:2000, pct:5 },
+    // 2001–2500
+    { type:'minik', ccMin:2001, ccMax:2500, regions:PASA_A, yearMin:2017, ban:true, makes:['Toyota','QAZ','GAZ'], note:'2001–2500, Abşeron/Bakı/Sumqayıt/Gəncə, 2017-dən — qadağa' },
+    { type:'minik', ccMin:2001, ccMax:2500, regionsNot:PASA_A, yearMin:2002, ban:true, makes:['Toyota','QAZ','GAZ'], note:'2001–2500, region, 2002-dən — qadağa' },
+    { type:'minik', ccMin:2001, ccMax:2500, pct:10 },
+    // 2501–3000
+    { type:'minik', ccMin:2501, ccMax:3000, regionsNot:PASA_A, ban:true, note:'2501–3000, region — ÜMUMİ QADAĞA' },
+    { type:'minik', ccMin:2501, ccMax:3000, regions:PASA_A, yearMin:2022, ban:true, makes:['Audi','BMW','Ford','Hyundai','Land Rover','Range Rover','Porsche'], note:'2501–3000, 2022-dən — qadağa' },
+    { type:'minik', ccMin:2501, ccMax:3000, pct:15 },
+    { type:'minik', ccMin:3001, ccMax:3500, pct:25 },
+    { type:'minik', ccMin:3501, ccMax:99999, pct:30 },
+    // Yük
+    { type:'yuk', kgMin:0, kgMax:3500, ban:true, makes:['Mercedes','Chevrolet','Dacia'], note:'0–3500 kq — qadağa' },
+    { type:'yuk', kgMin:0, kgMax:3500, ban:true, makes:['Ford'], models:['Transit'], note:'Ford Transit — qadağa' },
+    { type:'yuk', kgMin:0, kgMax:3500, pct:10 },
+    { type:'yuk', kgMin:3501, kgMax:7000, ban:true, note:'3501–7000 kq — ÜMUMİ QADAĞA' },
+    { type:'yuk', kgMin:7001, kgMax:999999, pct:33 },
+    { type:'qosqu', tow:false, ban:true, note:'Dartıcısız QADAĞA' },
+    { type:'qosqu', tow:true, pct:10 },
+    { type:'texnika', pct:10 },
+    // Əmlak, Yaşıl kart
+    { type:'emlak', person:'fiz', pct:25, note:'İcbari — fiziki şəxslər' },
+    { type:'emlak', person:'huq', pct:25, note:'İcbari — hüquqi şəxslər' },
+    { type:'yasil', pct:15 },
+  ]},
 ]};
-const TYPES = { minik:'Minik', yuk:'Yük', avtobus:'Avtobus', motosikl:'Motosikl', qosqu:'Qoşqu', texnika:'Ağır texnika', serhed:'Sərhəd' };
+const TYPES = { minik:'Minik', yuk:'Yük', avtobus:'Avtobus', motosikl:'Motosikl', qosqu:'Qoşqu', texnika:'Ağır / xüsusi texnika', serhed:'Sərhəd', emlak:'Əmlak (icbari)', yasil:'Yaşıl kart' };
+const NO_CAR = ['emlak', 'yasil'];
 
 const cfgNow = () => ((S.cfg || []).find(x => x.id === 1)) || DEFAULT_CFG;
 const nrm = x => String(x || '').toLocaleLowerCase('az').replace(/İ/g,'i').replace(/[\s\-()]/g, '');
@@ -850,12 +897,20 @@ function ruleFor(co, q){
     if (r.electric != null && !!r.electric !== !!q.electric) continue;
     if (r.electric == null && q.electric && q.type === 'minik' && (co.rules || []).some(x => x.type === 'minik' && x.electric && (!x.person || x.person === q.person) && !!x.banList === inBan)) continue;
     if (r.makes && !makeHit(r.makes, q.make)) continue;
+    if (r.models && !makeHit(r.models, q.model)) continue;
+    if (r.yearMin && !(q.year >= r.yearMin)) continue;
+    if (r.tow != null && !!r.tow !== !!q.tow) continue;
     if (r.makesNot && makeHit(r.makesNot, q.make)) continue;
     if (r.regions && !regHit(r.regions, q.region)) continue;
     if (r.regionsNot && regHit(r.regionsNot, q.region)) continue;
     if (q.type === 'minik' && !q.electric && r.ccMin != null && !(q.cc >= r.ccMin && q.cc <= r.ccMax)) continue;
     if (q.type === 'yuk' && r.kgMin != null && !(q.kg >= r.kgMin && q.kg <= r.kgMax)) continue;
     if (q.type === 'avtobus' && r.seatMin != null && !(q.seats >= r.seatMin && q.seats <= r.seatMax)) continue;
+    if (r.premMax != null || r.premMin != null) {
+      if (!q.premium) return { pending:true, note:'Sığorta haqqını yazın (' + (r.note || '') + ')' };
+      if (r.premMax != null && !(q.premium <= r.premMax)) continue;
+      if (r.premMin != null && !(q.premium >= r.premMin)) continue;
+    }
     return r;
   }
   return null;
@@ -863,6 +918,7 @@ function ruleFor(co, q){
 function calcAll(q, cut){
   return cfgNow().companies.map(co => {
     if (co.pendingAll) return { co: co.name, st: 'wait', note: co.pendingAll };
+    if (co.huqIndividual && q.person === 'huq' && !NO_CAR.includes(q.type)) return { co: co.name, st: 'wait', note: co.huqIndividual };
     if (makeHit(co.banMakes, q.make) && !(co.rules || []).some(x => x.banList)) return { co: co.name, st: 'ban', note: 'Qadağan olunmuş marka' };
     const r = ruleFor(co, q);
     if (!r) return { co: co.name, st: 'wait', note: 'Bu hal üçün tarif yoxdur' };
@@ -894,14 +950,17 @@ function pCalc(u){
     <div class="grid2"><div class="card"><form id="cf" autocomplete="off">
       <div class="row"><label>Sığortalı<select name="person"><option value="fiz">Fiziki şəxs</option><option value="huq">Hüquqi şəxs</option></select></label>
         <label>NV növü<select name="type">${Object.entries(TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></label></div>
-      <label>Marka *<input name="make" list="dlMake" required placeholder="Yazın: məs. Toyota"></label><datalist id="dlMake">${opt(allMakes)}</datalist>
+      <div id="fCar1"><label>Marka *<input name="make" list="dlMake" required placeholder="Yazın: məs. Toyota"></label><datalist id="dlMake">${opt(allMakes)}</datalist>
       <label>Model *<input name="model" list="dlModel" required placeholder="Əvvəl markanı seçin"></label><datalist id="dlModel"></datalist>
       <p class="muted" style="margin:-4px 0 8px;font-size:13px">Siyahıda yoxdur? <a href="#" id="addCar">➕ Marka / model əlavə et</a></p>
+</div>
+      <div id="fTow" hidden><label><input type="checkbox" name="tow" style="width:auto"> Dartıcı (yük maşını) ilə birlikdə sığortalanır</label></div>
       <div id="fCc"><div class="row"><label>Mühərrik həcmi (sm³) *<input name="cc" type="number" min="0" max="20000" placeholder="məs. 1600"></label>
         <label style="align-self:end"><input type="checkbox" name="electric" style="width:auto"> Elektromobil</label></div></div>
       <div id="fKg" hidden><label>Tonnaj / yük götürmə (kq) *<input name="kg" type="number" min="0" max="100000" placeholder="məs. 3500"></label></div>
       <div id="fSeat" hidden><label>Sərnişin yerlərinin sayı *<input name="seats" type="number" min="1" max="200" placeholder="məs. 18"></label></div>
-      <label>Qeydiyyat ünvanı *<input name="region" list="dlReg" required placeholder="Yazın: məs. Sumqayıt"></label><datalist id="dlReg">${opt(REGIONS)}</datalist>
+      <label id="fYear">İstehsal ili *<input name="year" type="number" inputmode="numeric" min="1950" max="${new Date().getFullYear() + 1}" step="1" placeholder="məs. 2018"></label>
+      <label id="fReg">Qeydiyyat ünvanı *<input name="region" list="dlReg" required placeholder="Yazın: məs. Sumqayıt"></label><datalist id="dlReg">${opt(REGIONS)}</datalist>
       <label>Sığorta haqqı (AZN) <small class="muted">(bilirsinizsə — məbləği hesablamaq üçün)</small><input name="premium" type="number" min="0" step="0.01"></label>
       <button class="btn wide">Hesabla</button></form></div>
       <div class="card"><h2 style="margin-top:0">Nəticə</h2><div id="cRes" class="muted">Məlumatları doldurub "Hesabla" basın.</div></div></div>
@@ -917,7 +976,9 @@ function pCalc(u){
   const f = $('#cf'), typeSel = f.type;
   const sync = () => { const t = typeSel.value;
     $('#fCc').hidden = t !== 'minik'; $('#fKg').hidden = t !== 'yuk'; $('#fSeat').hidden = t !== 'avtobus';
-    f.cc.required = t === 'minik' && !f.electric.checked; f.kg.required = t === 'yuk'; f.seats.required = t === 'avtobus'; };
+    f.cc.required = t === 'minik' && !f.electric.checked; f.kg.required = t === 'yuk'; f.seats.required = t === 'avtobus';
+    const car = !NO_CAR.includes(t); $('#fCar1').hidden = !car; $('#fReg').style.display = car ? '' : 'none'; f.make.required = f.model.required = f.region.required = car;
+    $('#fYear').style.display = car ? '' : 'none'; f.year.required = car; $('#fTow').hidden = t !== 'qosqu'; };
   typeSel.onchange = sync; f.electric.onchange = sync; sync();
   const fillModels = () => { const mk = allMakes.find(x => nrm(x) === nrm(f.make.value)) || f.make.value;
     $('#dlModel').innerHTML = opt([...new Set([...(CARS[mk] || []), ...(extraMakes[mk] || [])])]); };
@@ -928,17 +989,18 @@ function pCalc(u){
     const known = allMakes.find(x => nrm(x) === nrm(mk)) || mk;
     if ([...(CARS[known] || []), ...(extraMakes[known] || [])].some(x => nrm(x) === nrm(md))) { $('#dCar').close(); f.make.value = known; fillModels(); f.model.value = md; return; }
     S.cars = S.cars || []; S.cars.push({ id: nid('k'), make: known, model: md, user_id: u.id, created_at: now(), ok: isF(u) });
-    const mv = { person: f.person.value, type: f.type.value, cc: f.cc.value, kg: f.kg.value, seats: f.seats.value, region: f.region.value, premium: f.premium.value, electric: f.electric.checked };
+    const mv = { person: f.person.value, type: f.type.value, year: f.year.value, tow: f.tow.checked, cc: f.cc.value, kg: f.kg.value, seats: f.seats.value, region: f.region.value, premium: f.premium.value, electric: f.electric.checked };
     save(); toast('Əlavə edildi: ' + known + ' ' + md); render();
-    const f2 = $('#cf'); Object.entries(mv).forEach(([k, v]) => { if (k === 'electric') f2.electric.checked = v; else f2[k].value = v; });
+    const f2 = $('#cf'); Object.entries(mv).forEach(([k, v]) => { if (k === 'electric' || k === 'tow') f2[k].checked = v; else f2[k].value = v; });
     f2.make.value = known; f2.make.dispatchEvent(new Event('input')); f2.model.value = md; f2.type.dispatchEvent(new Event('change')); };
   f.onsubmit = ev => { ev.preventDefault();
-    const reg = REGIONS.find(x => nrm(x) === nrm(f.region.value));
-    if (!reg) return $('#cRes').innerHTML = '<div class="flash err">Qeydiyyat ünvanını siyahıdan seçin.</div>';
+    const car = !NO_CAR.includes(f.type.value);
+    const reg = car ? REGIONS.find(x => nrm(x) === nrm(f.region.value)) : '';
+    if (car && !reg) return $('#cRes').innerHTML = '<div class="flash err">Qeydiyyat ünvanını siyahıdan seçin.</div>';
     const q = { person: f.person.value, type: f.type.value, make: f.make.value.trim(), model: f.model.value.trim(), cc: +f.cc.value || 0, kg: +f.kg.value || 0,
-      seats: +f.seats.value || 0, region: reg, electric: f.electric.checked, premium: +f.premium.value || 0 };
+      seats: +f.seats.value || 0, region: reg, electric: f.electric.checked, premium: +f.premium.value || 0, year: +f.year.value || 0, tow: f.tow.checked };
     const res = calcAll(q, myCutOf(u));
-    $('#cRes').innerHTML = `<p class="muted" style="margin-top:0">${e(q.make)} ${e(q.model)} · ${TYPES[q.type]}${q.type === 'minik' ? (q.electric ? ' · Elektromobil' : ' · ' + q.cc + ' sm³') : q.type === 'yuk' ? ' · ' + q.kg + ' kq' : q.type === 'avtobus' ? ' · ' + q.seats + ' yer' : ''} · ${e(reg)} · ${q.person === 'fiz' ? 'Fiziki' : 'Hüquqi'}</p>
+    $('#cRes').innerHTML = `<p class="muted" style="margin-top:0">${car ? e(q.make) + ' ' + e(q.model) + ' · ' : ''}${TYPES[q.type]}${q.type === 'minik' ? (q.electric ? ' · Elektromobil' : ' · ' + q.cc + ' sm³') : q.type === 'yuk' ? ' · ' + q.kg + ' kq' : q.type === 'avtobus' ? ' · ' + q.seats + ' yer' : ''} ${car ? ' · İstehsal ili: ' + q.year + ' · ' + e(reg) : ''} · ${q.person === 'fiz' ? 'Fiziki' : 'Hüquqi'}</p>
       <table><tr><th>Şirkət</th><th>Vəziyyət</th><th>Komissiya</th><th>Məbləğ</th></tr>${res.map(r => `<tr><td><b>${e(r.co)}</b>${r.note ? `<br><small class="muted">${e(r.note)}</small>` : ''}</td>
         <td>${r.st === 'ok' ? '✅ Olar' : r.st === 'ban' ? '<b style="color:#dc2626">❌ Qadağa</b>' : '⏳ Məlumat yoxdur'}</td>
         <td>${r.st === 'ok' && r.pct != null ? `<b style="font-size:1.15em;color:#16a34a">${r.pct}%</b>` : '—'}</td>
