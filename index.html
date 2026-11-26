@@ -67,7 +67,18 @@ dialog{border:0;border-radius:14px;padding:22px;width:min(420px,92vw);box-shadow
 .cpb{border:1px solid #cbd5e1;background:#fff;border-radius:6px;padding:1px 6px;font-size:12px;cursor:pointer;line-height:20px;opacity:.75}
 .cpb:hover{opacity:1;background:#eff6ff;border-color:#93c5fd}.cpb.ok{background:#16a34a;border-color:#16a34a;color:#fff;opacity:1}
 .kv{grid-template-columns:130px 1fr}
-</style></head>
+</style><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#0f172a">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Agent Şəbəkəsi">
+<style>@media (max-width:700px){
+ header.top{flex-wrap:wrap;padding-top:env(safe-area-inset-top)}
+ header.top nav{order:3;width:100%;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+ header.top nav::-webkit-scrollbar{display:none}
+ header.top .who img{position:static !important;transform:none !important;margin:0 6px 0 0 !important;vertical-align:middle;width:26px !important;height:26px !important}
+ header.top .who{display:flex;align-items:center;gap:4px;font-size:14px}
+ input,select,textarea{font-size:16px !important}
+}</style></head>
 <body><div id="app"></div><script>// ===== Agent Şəbəkəsi — server versiyası (məlumat serverdə, MySQL) =====
 const KEY = 'agentnet_v1';
 const STATUSES = { yeni:['Yeni','#2563eb'], baxilir:['Baxılır','#d97706'], tesdiq:['Təsdiqləndi','#16a34a'], redd:['Rədd edildi','#dc2626'] };
@@ -111,6 +122,7 @@ function save(){
 }
 const nid = k => { const r = xhr('GET', 'a=nid&k=' + k); if (!r || !r.ok) { alert((r && r.err) || 'Server xətası'); throw new Error('nid'); } return r.id; };
 let S = load();
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('/sw.js').catch(() => {});
 // Yeni sənədlər / dəyişikliklər üçün serveri yoxla (2 san.)
 // Arxa planda da yatmayan taymer (Web Worker) — Chrome gizli tabda adi taymerləri dəqiqədə 1 dəfəyə endirir
 function wakeTick(fn, ms){ try { const w = new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),' + ms + ')'], { type:'text/javascript' }))); w.onmessage = fn; } catch(e){ setInterval(fn, ms); } }
@@ -633,10 +645,11 @@ function importJSON(){
 
 // ---------- MARŞRUT ----------
 function render(){
+  document.getElementById('watchBox')?.remove();
   const [path, q] = location.hash.slice(1).split('?'), qs = new URLSearchParams(q || ''), [page, arg] = (path || 'home').split('/');
   applyBg(null);
   if (!SRV.hasUsers && !S.users.length) return pSetup();
-  if (page === 'logout') { xhr('POST', 'a=logout'); S = setState({ hasUsers:true, state:blank() }); return go('#login'); }
+  if (page === 'logout') { watchSet(0); xhr('POST', 'a=logout'); S = setState({ hasUsers:true, state:blank() }); return go('#login'); }
   const u = me();
   if (!u) return pLogin();
   window.scrollTo(0, 0);

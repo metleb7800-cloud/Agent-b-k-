@@ -85,6 +85,18 @@ def state_for(c, V):
 def index():
     r = send_from_directory(HERE, 'index.html'); r.headers['Cache-Control'] = 'no-cache'; return r
 
+@app.route('/manifest.json')
+@app.route('/sw.js')
+@app.route('/icon-192.png')
+@app.route('/icon-512.png')
+@app.route('/apple-touch-icon.png')
+def pwa_files():
+    name = request.path.lstrip('/')
+    r = send_from_directory(HERE, name)
+    if name == 'sw.js': r.headers['Cache-Control'] = 'no-cache'; r.headers['Service-Worker-Allowed'] = '/'
+    if name == 'manifest.json': r.headers['Content-Type'] = 'application/manifest+json'
+    return r
+
 @app.route('/api.php', methods=['GET', 'POST'])
 def api():
     a = request.args.get('a', '')
