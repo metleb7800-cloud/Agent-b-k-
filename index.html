@@ -135,7 +135,7 @@ wakeTick(async () => {
     if (diff()) { cacheForRobot(r.state || {}); return; } // saxlanmamış dəyişiklik var — yalnız robot üçün yaddaşı yenilə
     S = setState(r);
     const ae = document.activeElement, page = (location.hash.slice(1).split('?')[0] || 'home').split('/')[0];
-    try { campNotify(); if (document.getElementById('kampFab')) kampFab(page); } catch(e){}
+    try { campNotify(); if (document.getElementById('kampFab')) kampFab(page); pdfFab(page); } catch(e){}
     const busy = (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) || document.querySelector('dialog[open]');
     if (!busy && ['home','docs','done','doc','team','kamp'].includes(page)) { const y = scrollY; render(); scrollTo(0, y); }
   } catch(e){}
@@ -204,7 +204,7 @@ function shell(u, page, body){
     <nav>${a('home','Panel')}${a('docs','Sənədlər'+(n?` <b class="dot">${n}</b>`:''))}${a('new','+ Sənəd göndər')}${a('team','Komanda')}${a('done','✓ Təsdiqlənənlər')}</nav>
     <div class="who" style="position:relative">${true ? `<img src="${avOf(u)}" alt="" style="position:absolute;right:100%;top:50%;transform:translateY(-50%);margin-right:8px;width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #fff">` : ''}${e(u.name)} <small>${roleName(u)}</small> <a href="#profile">Profil</a> · <a href="#logout">Çıxış</a></div></header>
     <main>${f ? `<div class="flash ${f[1]}">${e(f[0])}</div>` : ''}${body}</main>`;
-  drawWatch(page); calcFab(page); kampFab(page); campNotify();
+  drawWatch(page); calcFab(page); kampFab(page); campNotify(); pdfFab(page);
 }
 // ---------- Göndərilən sənədin İSB gedişatı (ekranın üstündə ayrıca pəncərə — düymələr yerindən oynamır) ----------
 const watchGet = () => +(sessionStorage.getItem('agentnet_watch') || 0);
@@ -215,7 +215,7 @@ function isbParts(d){
     st: t.find(x => /gözləyir|ödənil|qüvvə/i.test(x)) || '', pay: t.find(x => /^\d{10,14}$/.test(x)) || '', sum: t.find(x => /^\d+\.\d{2}$/.test(x)) || '' };
 }
 function drawWatch(page){
-  document.getElementById('watchBox')?.remove(); document.getElementById('dlApp')?.remove(); document.getElementById('calcFab')?.remove(); document.getElementById('kampFab')?.remove();
+  document.getElementById('watchBox')?.remove(); document.getElementById('dlApp')?.remove(); document.getElementById('calcFab')?.remove(); document.getElementById('kampFab')?.remove(); document.getElementById('pdfFab')?.remove();
   const id = watchGet(); if (!id || page === 'new') return;
   const d = S.docs.find(x => x.id === id); if (!d) return watchSet(0);
   const lastLog = S.log.filter(l => l.document_id === id).slice(-1)[0];
@@ -446,6 +446,47 @@ function pNew(u, qs){
     toast(isF(u) ? 'Sənəd əlavə edildi.' : 'Sənəd göndərildi — qurucuya düşdü.'); watchSet(id); go('#docs'); };
 }
 
+// ---------- PDF: təsdiqlənmiş sənəd üçün agent qurucudan PDF istəyir, qurucu yükləyir ----------
+const PDF_MB = 4;
+const pdfOf = d => d.pdf_file ? S.files.find(f => f.id === d.pdf_file) : null;
+function pdfCtl(u, d){
+  if (d.status !== 'tesdiq') return '';
+  const b = (id, txt, bg) => `<button type="button" id="${id}" style="position:absolute;right:0;top:50%;transform:translateY(-50%);border:0;border-radius:10px;padding:8px 14px;font-size:14px;font-weight:700;cursor:pointer;color:#fff;background:${bg}">${txt}</button>`;
+  const pf = pdfOf(d), css = '<style>@media(max-width:700px){#pdfUp,#pdfGet,#pdfAsk,#pdfWait{position:static!important;transform:none!important;display:block;margin-top:8px}}</style>';
+  if (isF(u)) return css + b('pdfUp', pf ? '📄 PDF dəyiş' : d.pdf_req ? '📄 PDF yüklə — istənilir!' : '📄 PDF yüklə', pf ? '#64748b' : d.pdf_req ? '#dc2626' : '#1d4ed8') + '<input type="file" id="pdfIn" accept="application/pdf,.pdf" hidden>';
+  if (pf) return css + b('pdfGet', '📄 PDF endir', '#16a34a');
+  if (d.pdf_req) return css + b('pdfWait', '⏳ PDF istənildi', '#94a3b8');
+  return css + b('pdfAsk', '📄 PDF istə', '#1d4ed8');
+}
+function pdfWire(u, d){
+  if (d.status !== 'tesdiq') return;
+  const pf = pdfOf(d);
+  if (pf && !isF(u) && d.user_id === u.id && !d.pdf_seen) { d.pdf_seen = true; save(); }
+  if ($('#pdfAsk')) $('#pdfAsk').onclick = () => { d.pdf_req = now(); d.pdf_req_by = u.id; logAdd(d.id, u.id, 'PDF istədi'); save(); toast('PDF istəyi qurucuya göndərildi.'); render(); };
+  if ($('#pdfGet')) $('#pdfGet').onclick = () => { const l = document.createElement('a'); l.href = pf.data; l.download = pf.name; l.click(); };
+  if ($('#pdfUp')) { $('#pdfUp').onclick = () => $('#pdfIn').click();
+    $('#pdfIn').onchange = async ev => { const x = ev.target.files[0]; if (!x) return;
+      if (!/\.pdf$/i.test(x.name) && x.type !== 'application/pdf') return alert('Yalnız PDF faylı seçin.');
+      if (x.size > PDF_MB * 1048576) return alert(`PDF ${PDF_MB} MB-dan böyük olmamalıdır.`);
+      const data = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(x); });
+      if (pf) S.files = S.files.filter(f => f.id !== pf.id);
+      const fid = nid('f'); S.files.push({ id:fid, document_id:d.id, name:x.name, mime:'application/pdf', size:x.size, data, pdf:true });
+      d.pdf_file = fid; d.pdf_at = now(); d.pdf_seen = false; logAdd(d.id, u.id, 'PDF yüklədi', x.name);
+      if (!save()) { S = load(); return; } toast('PDF yükləndi — agent görəcək.'); render(); };
+  }
+}
+// Sol aşağıda üzən düymə: qurucuya "PDF istəkləri", agentə "PDF hazırdır" (heç bir düymənin yerini dəyişmir)
+function pdfFab(page){
+  document.getElementById('pdfFab')?.remove(); const u = me && me(); if (!u) return;
+  const list = isF(u) ? branchDocs(u).filter(d => d.status === 'tesdiq' && d.pdf_req && !d.pdf_file)
+                      : S.docs.filter(d => d.user_id === u.id && d.status === 'tesdiq' && d.pdf_file && !d.pdf_seen);
+  if (!list.length) return;
+  const a = document.createElement('a'); a.id = 'pdfFab'; a.href = '#doc/' + list[0].id;
+  a.innerHTML = (isF(u) ? '📄 PDF istəyi' : '📄 PDF hazırdır') + ` <b style="background:#fff;color:#dc2626;border-radius:999px;padding:1px 8px;margin-left:4px">${list.length}</b>`;
+  a.style.cssText = 'position:fixed;left:18px;bottom:130px;z-index:8000;background:#dc2626;color:#fff;border-radius:999px;padding:12px 18px;font-weight:700;text-decoration:none;box-shadow:0 8px 24px #0004';
+  document.body.appendChild(a);
+}
+
 function pDoc(u, id){
   const d = S.docs.find(x => x.id === +id);
   if (!d || !canSee(u, d)) return shell(u, '', '<h1>Tapılmadı</h1><a href="#docs">← Sənədlər</a>');
@@ -455,7 +496,7 @@ function pDoc(u, id){
   const kv = (k, v, cv) => v ? `<dt>${k}</dt><dd><span class="kvv">${v}</span>${cv != null && cv !== '' ? `<button type="button" class="cpb" data-v="${e(cv)}" title="Kopyala">📋</button>` : ''}</dd>` : '';
   const sn = v => { const m = (v || '').match(/^([A-Z]+)(\d+)$/); return m ? [m[1], m[2]] : [v || '', '']; };
   const [dlS, dlN] = sn(d.license), ph = (d.customer_phone || '').replace(/\D/g, ''), birth = d.birth ? d.birth.split('-').reverse().join('.') : '';
-  shell(u, '', `<a href="#docs">← Sənədlər</a><h1>#${d.id} ${e(d.title)} ${badge(d.status)}</h1>${isF(u) ? `<p class="muted">Yol: ${chain(d.path)}</p>` : ""}
+  shell(u, '', `<a href="#docs">← Sənədlər</a><h1 style="position:relative">#${d.id} ${e(d.title)} ${badge(d.status)}${pdfCtl(u, d)}</h1>${isF(u) ? `<p class="muted">Yol: ${chain(d.path)}</p>` : ""}
     <div class="grid2"><div class="card"><dl class="kv">${kv('Göndərən', e(U(d.user_id)?.name || d.from_name), U(d.user_id)?.name || d.from_name)}${kv('Tarix', d.created_at, d.created_at)}
       ${kv('DQN', e(d.dqn), d.dqn)}${kv('Texpasport', e(d.texpasport), d.texpasport)}${d.person === 'huq' ? kv('VÖEN <small class="muted">(hüquqi)</small>', '<b>' + e(d.voen) + '</b>', d.voen) : kv('FİN', e(d.fin), d.fin)}
       ${kv('Vəsiqə', e(d.id_card), d.id_card)}${kv('Doğum tarixi', e(birth), birth)}
@@ -475,6 +516,7 @@ function pDoc(u, id){
       <div class="card"><h2>Tarixçə</h2><ul class="log">${log.map(l => `<li><b>${e(U(l.user_id)?.name)}</b> — ${e(l.action)} <small class="muted">${l.created_at}</small>${l.note?'<br>'+e(l.note):''}</li>`).join('')}</ul>
         <form class="inline" id="cm"><input name="note" placeholder="Şərh yaz..." required><button class="btn sm">Göndər</button></form></div>
       ${u.role === 'founder' ? '<button class="btn danger sm" id="del">Sənədi sil</button>' : ''}</div></div>`);
+  pdfWire(u, d);
   document.querySelectorAll('.cpb').forEach(c => c.onclick = () => {
     const v = c.dataset.v, done = () => { document.querySelectorAll('.cpb.ok').forEach(x => { x.classList.remove('ok'); x.textContent = '📋'; }); c.classList.add('ok'); c.textContent = '✓'; };
     (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(done, () => {
