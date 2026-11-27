@@ -88,7 +88,7 @@ const ALLOWED = ['pdf','jpg','jpeg','png','webp','heic','doc','docx','xls','xlsx
 const MAX_MB = 3;
 
 // ---------- SERVER QATI ----------
-const API = 'api.php', KINDS = ['users','docs','files','log','cfg','cars'];
+const API = 'api.php', KINDS = ['users','docs','files','log','cfg','cars','camp'];
 let BASE = {}, SRV = { hasUsers:false, rev:0, uid:0 };
 function blank(){ return { users:[], docs:[], files:[], log:[], cfg:[], cars:[], seq:{u:0,d:0,f:0,l:0,c:0,k:0} }; }
 function xhr(method, q, body){
@@ -101,7 +101,7 @@ function snap(st){ const b = { _fp: st.founderPreset || 0 }; for (const k of KIN
 function cacheForRobot(st){ try { localStorage.setItem(KEY, JSON.stringify({ docs: st.docs || [] })); } catch(e){} }
 function setState(r){
   SRV.hasUsers = !!r.hasUsers; SRV.rev = r.rev || 0; SRV.uid = r.uid || 0;
-  const st = r.state || blank(); st.cfg = st.cfg || []; st.cars = st.cars || []; BASE = snap(st); cacheForRobot(st);
+  const st = r.state || blank(); st.cfg = st.cfg || []; st.cars = st.cars || []; st.camp = st.camp || []; BASE = snap(st); cacheForRobot(st);
   if (SRV.uid) sessionStorage.setItem('agentnet_uid', SRV.uid); else sessionStorage.removeItem('agentnet_uid');
   return st;
 }
@@ -134,8 +134,9 @@ wakeTick(async () => {
     if (diff()) { cacheForRobot(r.state || {}); return; } // saxlanmamış dəyişiklik var — yalnız robot üçün yaddaşı yenilə
     S = setState(r);
     const ae = document.activeElement, page = (location.hash.slice(1).split('?')[0] || 'home').split('/')[0];
+    try { campNotify(); if (document.getElementById('kampFab')) kampFab(page); } catch(e){}
     const busy = (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) || document.querySelector('dialog[open]');
-    if (!busy && ['home','docs','done','doc','team'].includes(page)) { const y = scrollY; render(); scrollTo(0, y); }
+    if (!busy && ['home','docs','done','doc','team','kamp'].includes(page)) { const y = scrollY; render(); scrollTo(0, y); }
   } catch(e){}
 }, 2000);
 function newCode(){ let c; do { c = String(100000 + Math.floor(Math.random()*900000)); } while (S.users.some(u => u.code === c)); return c; }
@@ -202,7 +203,7 @@ function shell(u, page, body){
     <nav>${a('home','Panel')}${a('docs','Sənədlər'+(n?` <b class="dot">${n}</b>`:''))}${a('new','+ Sənəd göndər')}${a('team','Komanda')}${a('done','✓ Təsdiqlənənlər')}</nav>
     <div class="who" style="position:relative">${true ? `<img src="${avOf(u)}" alt="" style="position:absolute;right:100%;top:50%;transform:translateY(-50%);margin-right:8px;width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #fff">` : ''}${e(u.name)} <small>${roleName(u)}</small> <a href="#profile">Profil</a> · <a href="#logout">Çıxış</a></div></header>
     <main>${f ? `<div class="flash ${f[1]}">${e(f[0])}</div>` : ''}${body}</main>`;
-  drawWatch(page); calcFab(page);
+  drawWatch(page); calcFab(page); kampFab(page); campNotify();
 }
 // ---------- Göndərilən sənədin İSB gedişatı (ekranın üstündə ayrıca pəncərə — düymələr yerindən oynamır) ----------
 const watchGet = () => +(sessionStorage.getItem('agentnet_watch') || 0);
@@ -213,7 +214,7 @@ function isbParts(d){
     st: t.find(x => /gözləyir|ödənil|qüvvə/i.test(x)) || '', pay: t.find(x => /^\d{10,14}$/.test(x)) || '', sum: t.find(x => /^\d+\.\d{2}$/.test(x)) || '' };
 }
 function drawWatch(page){
-  document.getElementById('watchBox')?.remove(); document.getElementById('dlApp')?.remove(); document.getElementById('calcFab')?.remove();
+  document.getElementById('watchBox')?.remove(); document.getElementById('dlApp')?.remove(); document.getElementById('calcFab')?.remove(); document.getElementById('kampFab')?.remove();
   const id = watchGet(); if (!id || page === 'new') return;
   const d = S.docs.find(x => x.id === id); if (!d) return watchSet(0);
   const lastLog = S.log.filter(l => l.document_id === id).slice(-1)[0];
@@ -608,15 +609,15 @@ function pProfile(u){
 const splitSN = v => { const m = (v || '').match(/^([A-Z]+)(\d+)$/); return m ? [m[1], m[2]] : [v || '', '']; };
 const splitPh = v => { const d = (v || '').replace(/\D/g, ''); return d ? [d.slice(0, 3), d.slice(3)] : ['', '']; };
 function exportXlsx(rows){
-  const head = ['#','DQN','Texpasport','FİN','Şəxsiyyət vəsiqəsi','Doğum tarixi','Prava seriya','Prava nömrə','Tel kod','Tel nömrə','Sənəd növü','Qeyd','Göndərən','Rolu','Status','Tarix','Rəhbər qeydi','Fayl sayı'];
+  const head = ['#','DQN','Texpasport','FİN','Şəxsiyyət vəsiqəsi','Doğum tarixi','Prava','Telefon','Sənəd növü','Qeyd','Göndərən','Rolu','Status','Tarix','Rəhbər qeydi','Fayl sayı'];
   const data = rows.map(d => { const s = U(d.user_id); return [d.id, d.dqn || d.title, d.texpasport, d.fin, d.id_card,
-    d.birth ? d.birth.split('-').reverse().join('.') : '', ...splitSN(d.license), ...splitPh(d.customer_phone), d.doc_type, d.note, s?.name, s ? roleName(s) : '',
+    d.birth ? d.birth.split('-').reverse().join('.') : '', String(d.license || '').replace(/[\s-]/g, '').toUpperCase(), (([c, n]) => { const t = (String(c || '') + String(n || '')).replace(/\D/g, ''); return t ? (t.startsWith('0') ? t : '0' + t) : ''; })(splitPh(d.customer_phone)), d.doc_type, d.note, s?.name, s ? roleName(s) : '',
     STATUSES[d.status]?.[0], d.created_at, d.review_note, S.files.filter(f => f.document_id === d.id).length]; });
   const x = v => String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
   const col = i => { let s = ''; i++; while (i) { s = String.fromCharCode(65 + (i - 1) % 26) + s; i = Math.floor((i - 1) / 26); } return s; };
   const row = (r, ri, st) => `<row r="${ri}">${r.map((v, ci) => typeof v === 'number'
     ? `<c r="${col(ci)}${ri}"${st}><v>${v}</v></c>` : `<c r="${col(ci)}${ri}" t="inlineStr"${st}><is><t xml:space="preserve">${x(v)}</t></is></c>`).join('')}</row>`;
-  const widths = [6,12,14,11,16,13,8,11,8,11,16,30,20,10,13,17,25,9];
+  const widths = [6,12,14,11,16,13,13,13,16,30,20,10,13,17,25,9];
   const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
 <sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
 <cols>${widths.map((w, i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols>
@@ -670,6 +671,87 @@ function importJSON(){
 }
 
 // ---------- MARŞRUT ----------
+// ===================== KAMPANİYALAR =====================
+const KAMP_SEEN = () => 'agentnet_kamp_seen_' + (me()?.id || 0);
+const kampList = () => (S.camp || []).slice().sort((a, b) => b.id - a.id);
+const kampUnseen = () => { const seen = +(localStorage.getItem(KAMP_SEEN()) || 0); return kampList().filter(k => k.id > seen).length; };
+const ytId = u => { const m = String(u || '').match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/); return m ? m[1] : ''; };
+// Faylı serverə yüklə (server yoxdursa — faylın özü saxlanılır)
+function kampUpload(name, dataUrl){
+  if (typeof xhr === 'function' && typeof SRV !== 'undefined') {
+    const r = xhr('POST', 'a=upload', { name, data: dataUrl });
+    if (!r || !r.ok) { alert((r && r.err) || 'Fayl yüklənmədi'); return null; }
+    return { id: r.id, url: r.url };
+  }
+  return { id: 0, url: dataUrl };
+}
+const readFile = f => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(f); });
+const shrinkImg = (dataUrl, max = 1600) => new Promise(ok => { const i = new Image(); i.onload = () => { const k = Math.min(1, max / Math.max(i.width, i.height)), c = document.createElement('canvas');
+  c.width = Math.round(i.width * k); c.height = Math.round(i.height * k); c.getContext('2d').drawImage(i, 0, 0, c.width, c.height); ok(c.toDataURL('image/jpeg', 0.82)); }; i.onerror = () => ok(dataUrl); i.src = dataUrl; });
+
+function pKamp(u){
+  const F = isF(u), list = kampList();
+  const top = list.length ? list[0].id : 0;
+  shell(u, 'kamp', `<h1>📢 Kampaniyalar <small class="muted">(${list.length})</small></h1>
+    ${'Notification' in window && Notification.permission === 'default' ? `<p><button class="btn" id="kNotif" type="button" style="background:#7c3aed">🔔 Yeni kampaniyalar üçün bildirişləri aç</button></p>` : ''}
+    ${F ? `<div class="card" style="margin-bottom:16px"><h2 style="margin-top:0">Yeni kampaniya</h2><form id="kf">
+      <label>Başlıq *<input name="title" required maxlength="120" placeholder="məs. Dekabr kampaniyası — 30% komissiya"></label>
+      <label>Açıqlama<textarea name="text" rows="4" placeholder="Kampaniyanın şərtləri, müddəti…"></textarea></label>
+      <div class="row"><label>Şəkillər<input name="imgs" type="file" accept="image/*" multiple></label>
+        <label>Video (fayl, maks. 20 MB)<input name="vid" type="file" accept="video/*"></label></div>
+      <label>və ya video linki (YouTube)<input name="yt" placeholder="https://youtu.be/..."></label>
+      <button class="btn">Paylaş</button> <span id="kBusy" class="muted"></span></form></div>` : ''}
+    ${list.length ? list.map(k => `<div class="card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:start"><h2 style="margin:0">${e(k.title)}</h2>
+        ${F ? `<button class="link" data-kdel="${k.id}" style="color:#dc2626">sil</button>` : ''}</div>
+      <p class="muted" style="margin:4px 0 10px;font-size:13px">${e(k.created_at || '')}</p>
+      ${(k.media || []).filter(m => m.type === 'img').map(m => `<img src="${e(m.url)}" alt="" loading="lazy" style="max-width:100%;border-radius:10px;margin-bottom:10px;display:block">`).join('')}
+      ${(k.media || []).filter(m => m.type === 'vid').map(m => `<video src="${e(m.url)}" controls playsinline preload="metadata" style="width:100%;max-height:70vh;border-radius:10px;margin-bottom:10px;background:#000"></video>`).join('')}
+      ${ytId(k.yt) ? `<div style="position:relative;padding-top:56.25%;margin-bottom:10px"><iframe src="https://www.youtube.com/embed/${ytId(k.yt)}" style="position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:10px" allowfullscreen></iframe></div>` : ''}
+      ${k.text ? `<p style="white-space:pre-wrap;margin:0">${e(k.text)}</p>` : ''}</div>`).join('')
+      : '<div class="card"><p class="muted">Hələ kampaniya yoxdur.</p></div>'}`);
+  if (top) localStorage.setItem(KAMP_SEEN(), top); // baxıldı
+  if ($('#kNotif')) $('#kNotif').onclick = () => Notification.requestPermission().then(() => render());
+  if (F) {
+    $('#kf').onsubmit = async ev => { ev.preventDefault(); const f = ev.target, busy = $('#kBusy'), btn = f.querySelector('button');
+      const vid = f.vid.files[0]; if (vid && vid.size > 20 * 1024 * 1024) return alert('Video 20 MB-dan böyükdür. Kiçik video və ya YouTube linki istifadə edin.');
+      btn.disabled = true; busy.textContent = 'Yüklənir…';
+      try {
+        const media = [];
+        for (const img of f.imgs.files) { const d = await shrinkImg(await readFile(img)); const up = kampUpload(img.name, d); if (!up) throw 0; media.push({ type: 'img', id: up.id, url: up.url }); }
+        if (vid) { busy.textContent = 'Video yüklənir…'; const up = kampUpload(vid.name, await readFile(vid)); if (!up) throw 0; media.push({ type: 'vid', id: up.id, url: up.url }); }
+        S.camp = S.camp || [];
+        S.camp.push({ id: nid('p'), title: f.title.value.trim(), text: f.text.value.trim(), yt: f.yt.value.trim(), media, created_at: now(), by: u.id });
+        save(); toast('Kampaniya paylaşıldı — agentlərə bildiriş getdi.'); render();
+      } catch (err) { btn.disabled = false; busy.textContent = ''; }
+    };
+    document.querySelectorAll('[data-kdel]').forEach(b => b.onclick = () => { if (!confirm('Kampaniya silinsin?')) return;
+      S.camp = S.camp.filter(k => k.id !== +b.dataset.kdel); save(); render(); });
+  }
+}
+// Yeni kampaniya bildirişi (bir dəfə): ekranda + telefon/kompüter bildirişi
+function campNotify(){
+  const u = me(); if (!u) return;
+  const list = kampList(), key = 'agentnet_kamp_ntf_' + u.id;
+  if (localStorage.getItem(key) === null) { localStorage.setItem(key, list.length ? list[0].id : 0); return; } // ilk dəfə — köhnələr üçün bildiriş yox
+  const last = +localStorage.getItem(key); if (!list.length) return;
+  const fresh = list.filter(k => k.id > last && k.by !== u.id); if (!fresh.length) return;
+  localStorage.setItem(key, list[0].id);
+  const k = fresh[0];
+  toast('📢 Yeni kampaniya: ' + k.title);
+  try { if ('Notification' in window && Notification.permission === 'granted') {
+    const n = new Notification('📢 Yeni kampaniya', { body: k.title, icon: '/icon-192.png', tag: 'kamp' + k.id }); n.onclick = () => { focus(); location.hash = '#kamp'; };
+  } } catch (e) {}
+}
+// Sol aşağıda "Kampaniyalar" düyməsi (Kalkulyatorun üstündə) — menyu düymələrinin yerini dəyişmir
+function kampFab(page){
+  document.getElementById('kampFab')?.remove(); if (page === 'kamp') return;
+  const n = kampUnseen(), a = document.createElement('a'); a.id = 'kampFab'; a.href = '#kamp';
+  a.innerHTML = '📢 Kampaniyalar' + (n ? ` <b style="background:#dc2626;color:#fff;border-radius:999px;padding:1px 8px;margin-left:4px">${n}</b>` : '');
+  a.style.cssText = 'position:fixed;left:18px;bottom:74px;z-index:8000;background:#7c3aed;color:#fff;border-radius:999px;padding:12px 18px;font-weight:700;text-decoration:none;box-shadow:0 8px 24px #0004';
+  document.body.appendChild(a);
+}
+
 // ===================== KALKULYATOR =====================
 // Regionlar (Azərbaycanın bütün şəhər və rayonları)
 const REGIONS = ['Bakı','Sumqayıt','Abşeron','Gəncə','Mingəçevir','Şirvan','Naxçıvan','Lənkəran','Şəki','Yevlax','Naftalan','Xankəndi','Şuşa',
@@ -1078,7 +1160,7 @@ function render(){
   const u = me();
   if (!u) return pLogin();
   window.scrollTo(0, 0);
-  ({ home:pHome, docs:pDocs, done:(u, q) => pDocs(u, q, true), calc:pCalc, wait:(u, q) => pDocs(u, q, 'wait'), new:pNew, doc:pDoc, team:pTeam, profile:pProfile }[page] || pHome)(u, page === 'doc' ? arg : qs);
+  ({ home:pHome, docs:pDocs, done:(u, q) => pDocs(u, q, true), calc:pCalc, kamp:pKamp, wait:(u, q) => pDocs(u, q, 'wait'), new:pNew, doc:pDoc, team:pTeam, profile:pProfile }[page] || pHome)(u, page === 'doc' ? arg : qs);
 }
 // Bir dəfəlik: qurucunun girişi Kod ADMIN / Parol 123
 (async () => {
