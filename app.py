@@ -19,7 +19,7 @@ with eng.begin() as c:
     c.execute(text("CREATE TABLE IF NOT EXISTS an_rec (kind VARCHAR(8) NOT NULL, id INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY (kind, id))"))
     c.execute(text("CREATE TABLE IF NOT EXISTS an_meta (k VARCHAR(32) NOT NULL PRIMARY KEY, v BIGINT NOT NULL DEFAULT 0)"))
 
-KINDS = {'users': 'u', 'docs': 'd', 'files': 'f', 'log': 'l', 'cfg': 'c', 'cars': 'k'}
+KINDS = {'users': 'u', 'docs': 'd', 'files': 'f', 'log': 'l', 'cfg': 'c', 'cars': 'k', 'camp': 'p'}
 
 class Fail(Exception):
     def __init__(self, msg, code=400): super().__init__(msg); self.code = code
@@ -79,6 +79,7 @@ def state_for(c, V):
                      'log': [l for l in log.values() if i(l.get('document_id')) in ids],
                      'founderPreset': meta(c, 'founderPreset'),
                      'cfg': list(rows(c, 'cfg').values()),
+                     'camp': list(rows(c, 'camp').values()),
                      'cars': [k for k in rows(c, 'cars').values() if isF(V) or i(k.get('user_id')) == vid or k.get('ok')],
                      'myCut': 0 if isF(V) else sum(float(users.get(a, {}).get('cut') or 0) for a in anc),
                      'seq': {k: meta(c, 'seq_' + k) for k in KINDS.values()}}
@@ -100,6 +101,30 @@ def assetlinks():
     p = os.path.join(HERE, 'assetlinks.json')
     if not os.path.exists(p): return ('[]', 200, {'Content-Type': 'application/json'})
     return send_from_directory(HERE, 'assetlinks.json', mimetype='application/json')
+
+import base64, re as _re
+@app.route('/media/<int:mid>')
+def media(mid):
+    with eng.connect() as c:
+        if not me(c): return ('Daxil olun', 401)
+        rec = rows_one(c, 'media', mid)
+    if not rec: return ('Tapılmadı', 404)
+    m = _re.match(r'data:([^;]+);base64,(.*)$', rec.get('data', ''), _re.S)
+    if not m: return ('Səhv fayl', 500)
+    from flask import Response
+    raw = base64.b64decode(m.group(2))
+    rng = request.headers.get('Range')
+    if rng:  # video üçün hissə-hissə yükləmə
+        a, _, b = rng.replace('bytes=', '').partition('-'); a = int(a or 0); b = int(b) if b else len(raw) - 1; b = min(b, len(raw) - 1)
+        r = Response(raw[a:b + 1], 206, mimetype=m.group(1)); r.headers['Content-Range'] = f'bytes {a}-{b}/{len(raw)}'
+    else:
+        r = Response(raw, mimetype=m.group(1))
+    r.headers['Accept-Ranges'] = 'bytes'; r.headers['Cache-Control'] = 'private, max-age=86400'
+    return r
+
+def rows_one(c, kind, id_):
+    v = c.execute(text('SELECT data FROM an_rec WHERE kind=:k AND id=:i'), {'k': kind, 'i': int(id_)}).scalar()
+    return json.loads(v) if v else None
 
 @app.route('/manifest.json')
 @app.route('/sw.js')
@@ -137,6 +162,16 @@ def api():
 
         if a == 'logout':
             session.clear(); return ok({'ok': True})
+
+        if a == 'upload':
+            with eng.begin() as c:
+                V = me(c)
+                if not isF(V): return err('Yalnız qurucu fayl yükləyə bilər', 403)
+                data = str(inp.get('data') or '')
+                if not data.startswith('data:') or len(data) > 30_000_000: return err('Fayl çox böyükdür (maks. ~20 MB)')
+                n = c.execute(text('INSERT INTO an_meta (k, v) VALUES (:k, 1) ON CONFLICT (k) DO UPDATE SET v=an_meta.v+1 RETURNING v'), {'k': 'seq_m'}).scalar()
+                put(c, 'media', {'id': int(n), 'name': str(inp.get('name') or '')[:120], 'data': data})
+            return ok({'ok': True, 'id': int(n), 'url': f'/media/{int(n)}'})
 
         if a == 'nid':
             k = request.args.get('k', '')
@@ -204,6 +239,7 @@ def sync(c, inp):
                 if r.get('status') not in (old.get('status'), 'yeni'): r['status'] = old.get('status')
                 if (r.get('review_note') or '') not in ('', old.get('review_note') or ''): r['review_note'] = old.get('review_note') or ''
                 r['isb_code'] = old.get('isb_code'); r['reviewed_by'] = old.get('reviewed_by')
+                for k in ('pdf_file', 'pdf_at'): r[k] = old.get(k)  # PDF-i yalnız qurucu yükləyir
         docs[id_] = r; put(c, 'docs', r)
     # --- fayllar ---
     for r in ch.get('files') or []:
@@ -217,6 +253,18 @@ def sync(c, inp):
         if id_ <= 0 or (id_ in log and not isF(V)) or not own(docs.get(i(r.get('document_id')))): continue
         if not isF(V): r['user_id'] = vid
         log[id_] = r; put(c, 'log', r)
+    # --- kampaniyalar (yalnız qurucu yazır/silir) ---
+    camps = rows(c, 'camp')
+    for r in ch.get('camp') or []:
+        if not isF(V): raise Fail('Kampaniyanı yalnız qurucu əlavə edə bilər')
+        if i(r.get('id')) <= 0: raise Fail('Səhv kampaniya')
+        put(c, 'camp', r)
+    for id_ in dl.get('camp') or []:
+        if not isF(V): raise Fail('İcazə yoxdur')
+        k = camps.get(i(id_))
+        if k:
+            for m in (k.get('media') or []): delete(c, 'media', i(m.get('id')))
+            delete(c, 'camp', i(id_))
     # --- tariflər (yalnız qurucu) ---
     cfg, cars = rows(c, 'cfg'), rows(c, 'cars')
     for r in ch.get('cfg') or []:
