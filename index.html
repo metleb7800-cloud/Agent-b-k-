@@ -518,8 +518,8 @@ function pTeam(u){
   const users = S.users.filter(x => inBranch(u, x)), docs = branchDocs(u);
   const node = x => {
     const kids = users.filter(k => k.parent_id === x.id), mine = docs.filter(d => d.user_id === x.id);
-    return `<li><div class="node${x.active?'':' off'}"><span class="role r-${x.role}">${roleName(x)}</span> <b>${e(x.name)}</b>
-      <small class="muted">Kod: <b>${e(x.code)}</b>${x.phone ? ' · ' + e(x.phone) : ''}</small>
+    return `<li><div class="node${x.active?'':' off'}"><img class="oav" src="${avOf(x)}" alt=""><b class="onm">${e(x.name)}</b><span class="role r-${x.role}">${roleName(x)}</span>
+      <small class="muted">Kod: <b>${e(x.code)}</b>${x.phone ? '<br>' + e(x.phone) : ''}</small>
       ${isF(u) ? `<a class="pill" href="#docs?who=${x.id}">${mine.length} sənəd · ${mine.filter(d=>d.status==='tesdiq').length} ✓</a>` : ''}
       ${kids.length ? `<small class="muted">${kids.length} alt</small>` : ''}
       <span class="acts">${x.active ? `<button class="link" data-add="${x.id}">+ alt əlavə et</button>` : ''}
@@ -527,7 +527,22 @@ function pTeam(u){
       ${kids.length ? `<ul>${kids.map(node).join('')}</ul>` : ''}</li>`;
   };
   shell(u, 'team', `${sendCard()}<h1>Komanda ağacı</h1><p class="muted">Siz öz budağınızdakı hər kəsi görür və idarə edirsiniz. Hər kəs öz altına yeni agent aça bilər.</p>
-    <div class="card tree"><ul>${node(u)}</ul></div>
+    <style>
+.org{overflow-x:auto;padding:24px 10px}.org ul{border-left:0 !important;padding-left:0 !important}.org li{margin:0 !important}.org li:only-child{padding-top:0}.org li:only-child::after{display:none}.org ul ul:has(>li:only-child){padding-top:40px}.org ul ul:has(>li:only-child)::before{height:40px}.org ul{display:flex;justify-content:center;padding:26px 0 0;margin:0;position:relative;list-style:none}
+.org>ul{padding-top:0;width:max-content;min-width:100%}.org li{position:relative;padding:26px 8px 0;text-align:center;flex:0 0 auto}
+.org>ul>li{padding-top:0}
+.org li::before,.org li::after{content:'';position:absolute;top:0;width:50%;height:26px;border-top:3px solid #3b5ba9}
+.org li::before{right:50%}.org li::after{left:50%;border-left:3px solid #3b5ba9}
+.org li:only-child::before,.org li:only-child::after{border-top:0}.org li:only-child::before{display:none}
+.org li:first-child::before,.org li:last-child::after{border-top:0}.org li:first-child:not(:only-child)::after{border-top-left-radius:0}
+.org li:last-child::before{border-right:3px solid #3b5ba9}.org li:last-child:not(:only-child)::after{border-left:0}
+.org>ul>li::before,.org>ul>li::after{display:none}
+.org ul ul::before{content:'';position:absolute;top:0;left:50%;margin-left:-1.5px;height:26px;border-left:3px solid #3b5ba9}
+.org .node{display:inline-flex;flex-direction:column;align-items:center;gap:3px;min-width:150px;max-width:190px;padding:10px 10px 8px;border:1px solid #e2e8f0;border-radius:14px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.06)}
+.org .node.off{opacity:.5}.org .oav{width:58px;height:58px;border-radius:50%;object-fit:cover;border:3px solid #3b5ba9;background:#fff}
+.org .onm{font-size:14px;line-height:1.2}.org .node small{font-size:11px;line-height:1.3}
+.org .acts{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 8px;margin-top:3px}.org .acts .link{font-size:11px;padding:0}
+</style><div class="card tree org"><ul>${node(u)}</ul></div>
     <dialog id="dAdd"><form id="fAdd"><h2 id="tAdd"></h2><div id="eAdd"></div>
       <label>Ad Soyad<input name="name" required></label>
       <label>Telefon nömrəsi * (kod bu nömrəyə göndəriləcək)${phoneFields()}</label>
@@ -539,6 +554,7 @@ function pTeam(u){
       <label>Yeni giriş kodu<input name="code" required class="up" maxlength="12"></label>
       <label>Yeni parol <small class="muted">(boş qalsa, dəyişmir)</small><input name="password" minlength="3"></label>
       <div class="row"><button class="btn">Yadda saxla</button><button type="button" class="btn ghost" onclick="dEd.close()">Ləğv et</button></div></form></dialog>`);
+  { const o = $('.org'); if (o) o.scrollLeft = (o.scrollWidth - o.clientWidth) / 2; }
   const gen = () => String(100 + Math.floor(Math.random()*900));
   let target = null;
   document.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { target = U(b.dataset.add);
