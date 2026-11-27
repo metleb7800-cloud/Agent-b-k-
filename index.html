@@ -784,11 +784,11 @@ const REG_GROUPS = {
 // electric (true/false), makes / makesNot (marka adının hissəsi), regions / regionsNot, ban (qadağa), pct (komissiya faizi), premium (sığorta haqqı), amount (komissiya AZN), note
 const ATG_A = ['Bakı','Sumqayıt','Abşeron','Ağdam','Füzuli','Qubadlı','Zəngilan','Cəbrayıl','Laçın','Kəlbəcər','Şuşa','Xankəndi','Ağdərə','Xocalı','Xocavənd'];
 const PASA_A = ['Abşeron','Bakı','Sumqayıt','Gəncə'];
-const SOVET = ['Lada','VAZ','GAZ','QAZ','UAZ','Moskvich','ZAZ','IJ','Izh'];
+const SOVET = ['Lada','VAZ','GAZ','QAZ']; // Sovet istehsalı: yalnız VAZ / LADA / QAZ
 const SEN_A = ['Bakı','Abşeron','Sumqayıt','Gəncə','Cəbrayıl','Füzuli','Laçın','Qubadlı','Şuşa','Xankəndi','Xocalı','Zəngilan'];
-const CFG_VER = 5;
+const CFG_VER = 8;
 const DEFAULT_CFG = { id: 1, ver: CFG_VER, companies: [
-  { name: 'ATƏŞGAH Sığorta', banMakes: [],
+  { name: 'ATƏŞGAH Sığorta', banMakes: ['Khazar', 'Xəzər', 'AzSamand'], // bütün modelləri ilə
     // Qadağan edilmiş marka/modellər — fiziki şəxslərdə "Qadağa - minik" cədvəli ilə hesablanır
     banPairs: [['AzSamand','LX'],['Changan','Alsvin'],['Changan','Uni-V'],['Chevrolet','Aveo'],['Honda','Civic'],['Honda','Insight'],
       ['Hyundai','Elantra'],['Hyundai','Accent'],['Kia','Rio'],['Kia','Cerato'],['Kia','K3'],['Nissan','Sentra'],['Nissan','Note'],['Nissan','Tiida'],
@@ -865,24 +865,24 @@ const DEFAULT_CFG = { id: 1, ver: CFG_VER, companies: [
   ]},
   { name: 'PAŞA Sığorta', banMakes: [], huqIndividual: 'Avtonəqliyyata aid hüquqi şəxslər fərdi baxılır', rules: [
     // Sovet istehsalı (0–2000)
-    { type:'minik', makes:SOVET, ccMin:0, ccMax:2000, premMax:75, pct:5, note:'Sovet istehsalı, haqq ≤ 75 AZN' },
-    { type:'minik', makes:SOVET, ccMin:0, ccMax:2000, premMin:75.01, pct:10, note:'Sovet istehsalı, haqq > 75 AZN' },
+    { type:'minik', makes:SOVET, ccMin:0, ccMax:2000, premMax:75, pct:5, note:'Sovet istehsalı (VAZ/LADA/QAZ), haqq ≤ 75 AZN' },
+    { type:'minik', makes:SOVET, ccMin:0, ccMax:2000, premMin:75.01, pct:10, note:'Sovet istehsalı (VAZ/LADA/QAZ), haqq > 75 AZN' },
     // Elektromobil
     { type:'minik', electric:true, ban:true, makes:['Tesla','Zeekr','Chevrolet','Dayun','DongFeng','Toyota','MG'], note:'Elektromobil — bu marka qadağadır' },
     { type:'minik', electric:true, pct:10 },
     // 0–1500
-    { type:'minik', ccMin:0, ccMax:1500, yearMin:2022, ban:true, makes:['Honda','Nissan','KIA','Chevrolet','Toyota','Changan','BYD','FIAT'], note:'0–1500, 2022-dən — qadağa' },
+    { type:'minik', ccMin:0, ccMax:1500, yearMax:2021, ban:true, makes:['Honda','Nissan','KIA','Chevrolet','Toyota','Changan','BYD','FIAT'], note:'0–1500: 2022-dən köhnə — qadağa (2022 və təzə olar)' },
     { type:'minik', ccMin:0, ccMax:1500, pct:5 },
     // 1501–2000
-    { type:'minik', ccMin:1501, ccMax:2000, regions:PASA_A, yearMin:2020, ban:true, makes:['Chevrolet','Ford','GreatWall','Great Wall','Jetour','Lada','VAZ','Renault','VGV','Honda','BMW','FAW','Khazar','Jeep','Kia','Volkswagen'], note:'1501–2000, Abşeron/Bakı/Sumqayıt/Gəncə, 2020-dən — qadağa' },
+    { type:'minik', ccMin:1501, ccMax:2000, regions:PASA_A, yearMax:2019, ban:true, makes:['Chevrolet','Ford','GreatWall','Great Wall','Jetour','Lada','VAZ','Renault','VGV','Honda','BMW','FAW','Khazar','Jeep','Kia','Volkswagen'], note:'1501–2000, Abşeron/Bakı/Sumqayıt/Gəncə: 2020-dən köhnə — qadağa' },
     { type:'minik', ccMin:1501, ccMax:2000, pct:5 },
     // 2001–2500
-    { type:'minik', ccMin:2001, ccMax:2500, regions:PASA_A, yearMin:2017, ban:true, makes:['Toyota','QAZ','GAZ'], note:'2001–2500, Abşeron/Bakı/Sumqayıt/Gəncə, 2017-dən — qadağa' },
-    { type:'minik', ccMin:2001, ccMax:2500, regionsNot:PASA_A, yearMin:2002, ban:true, makes:['Toyota','QAZ','GAZ'], note:'2001–2500, region, 2002-dən — qadağa' },
+    { type:'minik', ccMin:2001, ccMax:2500, regions:PASA_A, yearMax:2016, ban:true, makes:['Toyota','QAZ','GAZ'], note:'2001–2500, Abşeron/Bakı/Sumqayıt/Gəncə: 2017-dən köhnə — qadağa' },
+    { type:'minik', ccMin:2001, ccMax:2500, regionsNot:PASA_A, yearMax:2001, ban:true, makes:['Toyota','QAZ','GAZ'], note:'2001–2500, region: 2002-dən köhnə — qadağa' },
     { type:'minik', ccMin:2001, ccMax:2500, pct:10 },
     // 2501–3000
     { type:'minik', ccMin:2501, ccMax:3000, regionsNot:PASA_A, ban:true, note:'2501–3000, region — ÜMUMİ QADAĞA' },
-    { type:'minik', ccMin:2501, ccMax:3000, regions:PASA_A, yearMin:2022, ban:true, makes:['Audi','BMW','Ford','Hyundai','Land Rover','Range Rover','Porsche'], note:'2501–3000, 2022-dən — qadağa' },
+    { type:'minik', ccMin:2501, ccMax:3000, regions:PASA_A, yearMax:2021, ban:true, makes:['Audi','BMW','Ford','Hyundai','Land Rover','Range Rover','Porsche'], note:'2501–3000: 2022-dən köhnə — qadağa' },
     { type:'minik', ccMin:2501, ccMax:3000, pct:15 },
     { type:'minik', ccMin:3001, ccMax:3500, pct:25 },
     { type:'minik', ccMin:3501, ccMax:99999, pct:30 },
@@ -922,6 +922,7 @@ function ruleFor(co, q){
     if (r.makes && !makeHit(r.makes, q.make)) continue;
     if (r.models && !modelHit(r.models, q.model)) continue;
     if (r.yearMin && !(q.year >= r.yearMin)) continue;
+    if (r.yearMax && !(q.year && q.year <= r.yearMax)) continue;
     if (r.tow != null && !!r.tow !== !!q.tow) continue;
     if (r.makesNot && makeHit(r.makesNot, q.make)) continue;
     if (r.regions && !regHit(r.regions, q.region)) continue;
@@ -1049,9 +1050,9 @@ function pCalc(u){
     const res = calcAll(q, myCutOf(u));
     $('#cRes').innerHTML = `<p class="muted" style="margin-top:0">${car ? e(q.make) + ' ' + e(q.model) + ' · ' : ''}${TYPES[q.type]}${q.type === 'minik' ? (q.electric ? ' · Elektromobil' : ' · ' + q.cc + ' sm³') : q.type === 'yuk' ? ' · ' + q.kg + ' kq' : q.type === 'avtobus' ? ' · ' + q.seats + ' yer' : ''} ${car ? ' · İstehsal ili: ' + q.year + ' · ' + e(reg) : ''} · ${q.person === 'fiz' ? 'Fiziki' : 'Hüquqi'}</p>
       <table><tr><th>Şirkət</th><th>Vəziyyət</th><th>Komissiya</th><th>Məbləğ</th></tr>${res.map(r => `<tr><td><b>${e(r.co)}</b>${r.note ? `<br><small class="muted">${e(r.note)}</small>` : ''}</td>
-        <td>${r.st === 'ok' ? '✅ Olar' : r.st === 'ban' ? '<b style="color:#dc2626">❌ Qadağa</b>' : '⏳ Məlumat yoxdur'}</td>
-        <td>${r.st === 'ok' && r.pct != null ? `<b style="font-size:1.15em;color:#16a34a">${r.pct}%</b>` : '—'}</td>
-        <td>${r.st === 'ok' && r.amt != null ? `${r.amt} AZN${r.prem ? `<br><small class="muted">haqq: ${r.prem} AZN</small>` : ''}` : r.fine ? `<b style="color:#dc2626">${r.fine} AZN</b><br><small class="muted">cərimə</small>` : '—'}</td></tr>`).join('')}</table>`; };
+        <td>${r.st === 'ok' ? ((r.pct != null && r.pct < 0) || (r.amt != null && r.amt < 0) ? '<b style="color:#dc2626">❌ Olmaz</b>' : '✅ Olar') : r.st === 'ban' ? '<b style="color:#dc2626">❌ Qadağa</b>' : '⏳ Məlumat yoxdur'}</td>
+        <td>${r.st === 'ok' && r.pct != null ? `<b style="font-size:1.15em;color:${r.pct < 0 ? '#dc2626' : '#16a34a'}">${r.pct}%</b>` : '—'}</td>
+        <td>${r.st === 'ok' && r.amt != null ? `<span style="${r.amt < 0 ? 'color:#dc2626;font-weight:700' : ''}">${r.amt} AZN</span>${r.prem ? `<br><small class="muted">haqq: ${r.prem} AZN</small>` : ''}` : r.fine ? `<b style="color:#dc2626">${r.fine} AZN</b><br><small class="muted">cərimə</small>` : '—'}</td></tr>`).join('')}</table>`; };
   if (F) {
     document.querySelectorAll('[data-okcar]').forEach(b => b.onclick = () => { const k = S.cars.find(x => x.id === +b.dataset.okcar); k.ok = true; save(); render(); });
     document.querySelectorAll('[data-delcar]').forEach(b => b.onclick = () => { if (!confirm('Silinsin?')) return; S.cars = S.cars.filter(x => x.id !== +b.dataset.delcar); save(); render(); });
