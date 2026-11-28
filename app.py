@@ -304,7 +304,20 @@ def sync(c, inp):
         t = users.get(i(id_))
         if not t or i(id_) == vid: continue
         if not isF(V) and not sw(t.get('path'), V.get('path')): raise Fail('Silməyə icazə yoxdur')
-        if any(i(o.get('parent_id')) == i(id_) for o in users.values() if i(o['id']) not in [i(x) for x in dl.get('users') or []]): raise Fail('Əvvəlcə altdakı agentləri silin')
+        # Silinən şəxsin altındakılar bir pillə yuxarı (onun rəhbərinə) keçir; göndərdiyi sənədlər qurucuda qalır
+        tp, par = str(t.get('path') or ''), users.get(i(t.get('parent_id')))
+        if not par: raise Fail('Qurucunu silmək olmaz')
+        pp = str(par.get('path') or '')
+        for oid, o in users.items():
+            if oid != i(id_) and tp and str(o.get('path') or '').startswith(tp):
+                o = dict(o); o['path'] = pp + str(o['path'])[len(tp):]; o['depth'] = max(2, i(o.get('depth') or 2) - 1)
+                if i(o.get('parent_id')) == i(id_): o['parent_id'] = i(par['id'])
+                users[oid] = o; put(c, 'users', o)
+        for did, d in docs.items():
+            ch_ = False; d = dict(d)
+            if tp and str(d.get('path') or '').startswith(tp): d['path'] = pp + str(d['path'])[len(tp):]; ch_ = True
+            if i(d.get('user_id')) == i(id_) and not d.get('from_name'): d['from_name'] = t.get('name'); ch_ = True
+            if ch_: docs[did] = d; put(c, 'docs', d)
         delete(c, 'users', i(id_))
     if isF(V) and 'founderPreset' in mt: set_meta(c, 'founderPreset', i(mt['founderPreset']))
     for kind, k in KINDS.items():
