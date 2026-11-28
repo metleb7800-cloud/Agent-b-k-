@@ -1,5 +1,5 @@
 # ===== Agent Şəbəkəsi — server (Python Flask + PostgreSQL), Railway üçün =====
-import os, json, time, hmac
+import os, json, time, hmac, re
 from flask import Flask, request, session, jsonify, send_from_directory
 from sqlalchemy import create_engine, text
 
@@ -172,6 +172,31 @@ def api():
                 n = c.execute(text('INSERT INTO an_meta (k, v) VALUES (:k, 1) ON CONFLICT (k) DO UPDATE SET v=an_meta.v+1 RETURNING v'), {'k': 'seq_m'}).scalar()
                 put(c, 'media', {'id': int(n), 'name': str(inp.get('name') or '')[:120], 'data': data})
             return ok({'ok': True, 'id': int(n), 'url': f'/media/{int(n)}'})
+
+        if a == 'pdf':  # Robot İSB-dən "Çıxarış" PDF-ini tutub göndərir → PDF istənilən sənədə bağlanır
+            with eng.begin() as c:
+                V = me(c)
+                if not isF(V): return err('Yalnız qurucu/robot', 403)
+                data = str(inp.get('data') or '')
+                if not data.startswith('data:application/pdf') or len(data) > 8_000_000: return err('PDF deyil və ya çox böyükdür')
+                N = lambda x: re.sub(r'[^A-Z0-9]', '', U(x))
+                dqn, pat = N(inp.get('dqn')), N(inp.get('pat'))
+                docs = rows(c, 'docs')
+                cand = [d for d in docs.values() if d.get('status') == 'tesdiq' and d.get('pdf_req') and not d.get('pdf_file')
+                        and ((dqn and N(d.get('dqn')) == dqn) or (pat and pat in N(str(d.get('isb_code') or '') + str(d.get('review_note') or ''))))]
+                if pat:
+                    exact = [d for d in cand if pat in N(str(d.get('isb_code') or '') + str(d.get('review_note') or ''))]
+                    cand = exact or cand
+                if not cand: return ok({'ok': False, 'none': True, 'error': 'Bu sənəd üçün PDF istəyi yoxdur'})
+                d = sorted(cand, key=lambda x: str(x.get('pdf_req') or ''))[-1]
+                nx = lambda k: int(c.execute(text('INSERT INTO an_meta (k, v) VALUES (:k, 1) ON CONFLICT (k) DO UPDATE SET v=an_meta.v+1 RETURNING v'), {'k': 'seq_' + k}).scalar())
+                fid, lid, ts = nx('f'), nx('l'), time.strftime('%Y-%m-%d %H:%M', time.gmtime(time.time() + 4 * 3600))
+                name = (str(inp.get('name') or '') or f"{d.get('dqn')}-cixaris.pdf")[:120]
+                put(c, 'files', {'id': fid, 'document_id': int(d['id']), 'name': name, 'mime': 'application/pdf', 'size': len(data) * 3 // 4, 'data': data, 'pdf': True})
+                d = dict(d); d.update(pdf_file=fid, pdf_at=ts, pdf_seen=False); put(c, 'docs', d)
+                put(c, 'log', {'id': lid, 'document_id': int(d['id']), 'user_id': int(V['id']), 'action': 'PDF yüklədi (robot)', 'note': name, 'created_at': ts})
+                set_meta(c, 'rev', meta(c, 'rev') + 1)
+            return ok({'ok': True, 'doc': int(d['id']), 'dqn': d.get('dqn')})
 
         if a == 'nid':
             k = request.args.get('k', '')
