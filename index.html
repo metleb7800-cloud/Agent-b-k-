@@ -428,7 +428,7 @@ function pNew(u, qs){
     $('#noDlBox').style.visibility = huq ? 'hidden' : 'visible';
     if (huq) ['dl_ser','dl_no'].forEach(n => { const el = F[n]; el.required = false; el.disabled = true; el.style.opacity = .4; }); else dlSync(); };
   const noDl = $('#f').no_dl, dlSync = () => { const on = noDl.checked; ['dl_ser','dl_no'].forEach(n => { const el = $('#f')[n]; el.required = !on; el.disabled = on; if (on) el.value = ''; el.style.opacity = on ? .4 : 1; }); $('#dlStar').style.visibility = on ? 'hidden' : 'visible'; };
-  $('#noDlBox').onclick = ev => { ev.preventDefault(); ev.stopPropagation(); noDl.checked = !noDl.checked; dlSync(); };
+  $('#noDlBox').onclick = ev => { ev.stopPropagation(); if (ev.target !== noDl) { ev.preventDefault(); noDl.checked = !noDl.checked; } setTimeout(dlSync, 0); }; // kvadrata da, yazıya da basanda seçilir
   if (ed && ed.no_license) { noDl.checked = true; } dlSync();
   document.querySelectorAll('[data-psn]').forEach(b => b.onclick = () => psnSet(b.dataset.psn));
   if (ed && ed.person === 'huq') $('#f').voen.value = ed.voen || '';
