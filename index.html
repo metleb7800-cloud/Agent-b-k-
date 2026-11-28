@@ -201,7 +201,7 @@ function shell(u, page, body){
   const a = (p, t) => `<a href="#${p}" class="${page===p?'on':''}">${t}</a>`;
   applyBg(u);
   app().innerHTML = `<header class="top"${u.hdrImg ? ` style="background:linear-gradient(90deg,#0f172abb,#0f172a66 40%,#0f172acc),url(${u.hdrImg}) center/cover no-repeat;text-shadow:0 1px 3px #000"` : ''}><a class="brand" href="#home">Agent Şəbəkəsi</a>
-    <nav>${a('home','Panel')}${a('docs','Sənədlər'+(n?` <b class="dot">${n}</b>`:''))}${a('new','+ Sənəd göndər')}${a('team','Komanda')}${a('done','✓ Təsdiqlənənlər')}</nav>
+    <nav>${a('home','Panel')}${a('docs','Sənədlər'+(n?` <b class="dot">${n}</b>`:''))}${a('new','+ Sənəd göndər')}${a('team','Komanda')}${a('done','🛡 İcbari Sığorta')}</nav>
     <div class="who" style="position:relative">${true ? `<img src="${avOf(u)}" alt="" style="position:absolute;right:100%;top:50%;transform:translateY(-50%);margin-right:8px;width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #fff">` : ''}${e(u.name)} <small>${roleName(u)}</small> <a href="#profile">Profil</a> · <a href="#logout">Çıxış</a></div></header>
     <main>${f ? `<div class="flash ${f[1]}">${e(f[0])}</div>` : ''}${body}</main>`;
   drawWatch(page); calcFab(page); kampFab(page); campNotify(); pdfFab(page);
@@ -325,7 +325,7 @@ function pHome(u){
       ${Object.entries(STATUSES).map(([k,[t,c]]) => `<a class="stat" href="#docs?status=${k}" style="border-top:3px solid ${c}${HIDDEN_ST.includes(k) ? ';visibility:hidden' : ''}"><b>${docs.filter(d=>d.status===k).length}</b><span>${t}</span></a>`).join('')}
       <div class="stat"><b>${S.docs.filter(d=>d.user_id===u.id).length}</b><span>Özüm göndərdim</span></div>
     </div>
-    <div class="grid2"><div class="card"><h2>${isF(u) ? 'Son gələn sənədlər' : 'Mənim son sənədlərim'}</h2>${docTable(docs.filter(d => d.status !== 'tesdiq').slice(0,10))}<a href="#docs">Hamısına bax →</a></div>
+    <div class="grid2"><div class="card"><h2>${isF(u) ? 'Son gələn sənədlər' : 'Mənim son sənədlərim'}</h2>${docTable(docs.filter(d => !FIN_ST.includes(d.status)).slice(0,10))}<a href="#docs">Hamısına bax →</a></div>
       <div class="card">${isF(u) ? `<h2>Bu ayın ən aktivləri</h2>${top.length ? '' : '<p class="muted">Hələ sənəd yoxdur.</p>'}
         <ol class="top">${top.map(([id,c]) => `<li>${e(U(id)?.name)} <b>${c}</b></li>`).join('')}</ol>` : '<h2>Sənəd göndər</h2><p class="muted">Göndərdiyiniz sənədlər birbaşa qurucuya düşür.</p>'}
         <a class="btn" href="#new">+ Sənəd göndər</a>
@@ -335,12 +335,13 @@ function pHome(u){
   if (u.role === 'founder') { $('#exp').onclick = exportJSON; $('#imp').onclick = importJSON; }
 }
 
+const FIN_ST = ['tesdiq', 'redd']; // İcbari Sığorta bölməsi: təsdiqlənən + rədd edilən
 function pDocs(u, qs, done = false){
   const wait = done === 'wait' && isF(u); if (done === 'wait') done = false;
   const st = qs.get('status') || '', s = (qs.get('s') || '').toLowerCase(), who = +(qs.get('who') || 0), from = qs.get('from') || '', to = qs.get('to') || '';
   let rows = branchDocs(u);
   // Təsdiqlənənlər ayrıca bölmədədir; əsas siyahıda yalnız işlənməmiş sənədlər
-  if (done) rows = rows.filter(d => d.status === 'tesdiq'); else if (st !== 'tesdiq') rows = rows.filter(d => d.status !== 'tesdiq');
+  if (done) rows = rows.filter(d => FIN_ST.includes(d.status)); else if (!FIN_ST.includes(st)) rows = rows.filter(d => !FIN_ST.includes(d.status));
   if (STATUSES[st]) rows = rows.filter(d => d.status === st);
   if (s) rows = rows.filter(d => [d.title,d.customer_name,d.customer_phone,d.customer_phone?.replace(/\D/g,''),d.doc_type,d.dqn,d.dqn?.replace(/-/g,''),d.fin,d.texpasport,d.id_card,d.license].some(x => (x||'').toLowerCase().includes(s)));
   if (isF(u) && who && U(who)) rows = rows.filter(d => d.path.startsWith(U(who).path));
@@ -356,7 +357,7 @@ function pDocs(u, qs, done = false){
     else if (!filtered) { waitN = Math.max(0, q.length - 1); rows = q.slice(0, 1); }
   }
   const people = S.users.filter(x => inBranch(u,x)).sort((a,b) => a.path.localeCompare(b.path));
-  shell(u, wait ? 'wait' : done ? 'done' : 'docs', `<h1>${wait ? '⏳ Gözləmədə' : done ? '✓ Təsdiqlənənlər' : isF(u) ? 'Gələn sənədlər' : 'Mənim sənədlərim'} <small class="muted">(${rows.length}${waitN ? ` · növbədə daha ${waitN}` : ''})</small>${isF(u) && !done ? (wait ? ' <a href="#docs" style="font-size:15px">← Növbəti sənəd</a>' : ' <a href="#wait" style="font-size:15px">⏳ Gözləmə</a>') : ''}</h1>
+  shell(u, wait ? 'wait' : done ? 'done' : 'docs', `<h1>${wait ? '⏳ Gözləmədə' : done ? '🛡 İcbari Sığorta' : isF(u) ? 'Gələn sənədlər' : 'Mənim sənədlərim'} <small class="muted">(${rows.length}${waitN ? ` · növbədə daha ${waitN}` : ''})</small>${isF(u) && !done ? (wait ? ' <a href="#docs" style="font-size:15px">← Növbəti sənəd</a>' : ' <a href="#wait" style="font-size:15px">⏳ Gözləmə</a>') : ''}</h1>
     <form class="filters" id="flt"><input name="s" value="${e(qs.get('s')||'')}" placeholder="Axtar: DQN, FİN, telefon...">
       <select name="status"><option value="">Bütün statuslar</option>${Object.entries(STATUSES).filter(([k]) => !HIDDEN_ST.includes(k)).map(([k,[t]]) => `<option value="${k}" ${st===k?'selected':''}>${t}</option>`).join('')}</select>
       ${isF(u) ? `<select name="who"><option value="">Hamı</option>${people.map(p => `<option value="${p.id}" ${who===p.id?'selected':''}>${'— '.repeat(Math.max(0,p.depth-u.depth))}${e(p.name)}</option>`).join('')}</select>` : ''}
@@ -612,10 +613,13 @@ function pTeam(u){
     const n = +String(v).replace(',', '.'); if (!(n >= 0 && n <= 100)) return alert('0 ilə 100 arası rəqəm yazın.');
     t.cut = n; save(); toast(t.name + ': −' + n + '%'); render(); });
   document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { const t = U(b.dataset.del);
-    if (S.users.some(k => k.parent_id === t.id)) return alert(`“${t.name}” altında agentlər var. Əvvəlcə onları silin.`);
-    if (!confirm(`“${t.name}” (kod ${t.code}) tam silinsin? Bu geri qaytarılmır.\nGöndərdiyi sənədlər qurucuda qalacaq.`)) return;
-    if (isF(u)) S.docs.filter(d => d.user_id === t.id).forEach(d => d.from_name = t.name);
-    S.users = S.users.filter(k => k.id !== t.id); save(); toast(t.name + ' silindi.'); render(); });
+    const kidsN = S.users.filter(k => k.parent_id === t.id).length, par = U(t.parent_id);
+    if (!confirm(`“${t.name}” (kod ${t.code}) tam silinsin? Bu geri qaytarılmır.\nGöndərdiyi sənədlər qurucuda qalacaq.` + (kidsN ? `\nAltındakı ${kidsN} nəfər “${par ? par.name : ''}” altına keçəcək.` : ''))) return;
+    S.docs.filter(d => d.user_id === t.id).forEach(d => d.from_name = d.from_name || t.name);
+    if (par) { const tp = t.path;
+      S.users.forEach(k => { if (k.id !== t.id && k.path.startsWith(tp)) { k.path = par.path + k.path.slice(tp.length); k.depth = Math.max(2, (k.depth || 2) - 1); if (k.parent_id === t.id) k.parent_id = par.id; } });
+      S.docs.forEach(d => { if ((d.path || '').startsWith(tp)) d.path = par.path + d.path.slice(tp.length); }); }
+    S.users = S.users.filter(k => k.id !== t.id); save(); toast(t.name + ' silindi — sənədləri qalır.'); render(); });
   $('#fAdd').onsubmit = async ev => { ev.preventDefault(); const f = new FormData(ev.target), code = f.get('code').trim().toUpperCase(), err = m => $('#eAdd').innerHTML = `<div class="flash err">${m}</div>`;
     if (!codeOk(code)) return err('Kod 3–12 simvol olmalıdır (rəqəm və ya hərf).');
     if (codeTaken(code, 0)) return err('Bu kod artıq başqasındadır.');
