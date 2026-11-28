@@ -476,8 +476,9 @@ function pdfWire(u, d){
       if (!save()) { S = load(); return; } toast('PDF yükləndi — agent görəcək.'); render(); };
   }
 }
-const pdfList = u => isF(u) ? S.docs.filter(d => d.status === 'tesdiq' && (d.pdf_req || d.pdf_file))
-                             : S.docs.filter(d => d.user_id === u.id && d.status === 'tesdiq' && (d.pdf_req || d.pdf_file));
+// Göndərilmiş PDF siyahıda qalmır: qurucuda yükləyən kimi, agentdə endirən kimi silinir (sənəd səhifəsində "PDF endir" qalır)
+const pdfList = u => isF(u) ? S.docs.filter(d => d.status === 'tesdiq' && d.pdf_req && !d.pdf_file)
+                             : S.docs.filter(d => d.user_id === u.id && d.status === 'tesdiq' && (d.pdf_req || d.pdf_file) && !(d.pdf_file && d.pdf_seen));
 const pdfN = u => isF(u) ? S.docs.filter(d => d.status === 'tesdiq' && d.pdf_req && !d.pdf_file).length
                          : S.docs.filter(d => d.user_id === u.id && d.status === 'tesdiq' && d.pdf_file && !d.pdf_seen).length;
 // PDF-lər bölməsi: istənilən sənədlər bura düşür; qurucu yalnız PDF yükləyir, kim istəyibsə o endirir
