@@ -135,7 +135,7 @@ wakeTick(async () => {
     if (diff()) { cacheForRobot(r.state || {}); return; } // saxlanmamış dəyişiklik var — yalnız robot üçün yaddaşı yenilə
     S = setState(r);
     const ae = document.activeElement, page = (location.hash.slice(1).split('?')[0] || 'home').split('/')[0];
-    try { campNotify(); if (document.getElementById('kampFab')) kampFab(page); pdfFab(page); } catch(e){}
+    try { campNotify(); pdfFab(page); } catch(e){}
     const busy = (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) || document.querySelector('dialog[open]');
     if (!busy && ['home','docs','done','doc','team','kamp','pdf'].includes(page)) { const y = scrollY; render(); scrollTo(0, y); }
   } catch(e){}
@@ -201,14 +201,37 @@ function shell(u, page, body){
   const a = (p, t) => `<a href="#${p}" class="${page===p?'on':''}">${t}</a>`;
   applyBg(u);
   app().innerHTML = `<header class="top"${u.hdrImg ? ` style="background:linear-gradient(90deg,#0f172abb,#0f172a66 40%,#0f172acc),url(${u.hdrImg}) center/cover no-repeat;text-shadow:0 1px 3px #000"` : ''}><a class="brand" href="#home">Agent Şəbəkəsi</a>
-    <nav>${a('home','Panel')}${a('docs','Sənədlər'+(n?` <b class="dot">${n}</b>`:''))}${a('new','+ Sənəd göndər')}${a('team','Komanda')}${a('done','🛡 İcbari Sığorta')}${a('pdf','📄 PDF-lər'+(pdfN(u)?` <b class="dot">${pdfN(u)}</b>`:''))}</nav>
+    <nav>${a('home','Panel')}${a('docs','Sənədlər'+(n?` <b class="dot">${n}</b>`:''))}${a('new','+ Sənəd göndər')}${a('calc','🧮 Kalkulyator')}${a('team','Komanda')}${a('done','🛡 İcbari Sığorta')}${a('pdf','📄 PDF-lər'+(pdfN(u)?` <b class="dot">${pdfN(u)}</b>`:''))}${a('kamp','📢 Kampaniyalar'+(kampUnseen()?` <b class="dot">${kampUnseen()}</b>`:''))}</nav>
     <div class="who" style="position:relative">${true ? `<img src="${avOf(u)}" alt="" style="position:absolute;right:100%;top:50%;transform:translateY(-50%);margin-right:8px;width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #fff">` : ''}${e(u.name)} <small>${roleName(u)}</small> <a href="#profile">Profil</a> · <a href="#logout">Çıxış</a></div></header>
     <main>${f ? `<div class="flash ${f[1]}">${e(f[0])}</div>` : ''}${body}</main>`;
-  drawWatch(page); calcFab(page); kampFab(page); campNotify(); pdfFab(page);
+  drawWatch(page); campNotify(); pdfFab(page);
 }
 // ---------- Göndərilən sənədin İSB gedişatı (ekranın üstündə ayrıca pəncərə — düymələr yerindən oynamır) ----------
 const watchGet = () => +(sessionStorage.getItem('agentnet_watch') || 0);
 const watchSet = id => id ? sessionStorage.setItem('agentnet_watch', id) : sessionStorage.removeItem('agentnet_watch');
+// İcbari Sığorta bölməsi üçün İSB görünüşlü cədvəl (məlumat eyni, yalnız görünüş)
+function isbFull(d){
+  const t = String(d.review_note || '').split(/\t|\n| {2,}/).map(x => x.trim()).filter(Boolean), p = isbParts(d);
+  const dts = t.filter(x => /^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}/.test(x));
+  const nv = t.find(x => /^[A-Z]{2}\d{6}$/.test(x)) || d.texpasport || '';
+  const dq = String(d.dqn || '').toUpperCase().replace(/[-\s]/g, '');
+  const idn = t.find(x => /^(?=.*\d)(?=.*[A-Z])[A-Z0-9]{7}$/.test(x) && x !== p.pat && x.replace(/-/g, '') !== dq) || t.find(x => /^\d{10}$/.test(x) && x !== p.pay) || (d.person === 'huq' ? d.voen : d.fin) || '';
+  const name = t.find(x => /^[^\d]{3,}$/.test(x) && /\s/.test(x) && !/gözləyir|ödənil|qüvvə|minəcək|edildi/i.test(x)) || d.customer_name || '';
+  return { ...p, dt: dts[0] || '', start: dts[1] || '', nv, idn, name };
+}
+function isbTable(rows){
+  if (!rows.length) return '<p class="muted">Sənəd yoxdur.</p>';
+  const th = ['','№','Sənədin nömrəsi','Daxilolma tarixi','Statusu','DQN','NVŞN','Ödəniş kodu','Sığorta haqqı','İdentifikasiya nömrəsi','Tam adı','Qüvvəyə minmə tarixi','Göndərən'];
+  return `<style>.isbt{width:100%;border-collapse:collapse;font-size:14px;white-space:nowrap}.isbt th{background:#f1f3f6;color:#1f2937;font-weight:700;text-align:left;padding:12px 10px;border-bottom:1px solid #dfe3e8}
+    .isbt td{padding:12px 10px;border-bottom:1px solid #e9edf1;color:#374151}.isbt tr.r:hover td{background:#f8fafc;cursor:pointer}.isbt tr.rd td{background:#fff7f7}
+    .isbt .op{color:#1f2937;font-size:17px;text-decoration:none}.isbt .mn{background:#2c3e50;color:#fff;border-radius:3px;padding:5px 10px;font-size:12px}</style>
+  <div class="tbl" style="overflow-x:auto"><table class="isbt"><tr>${th.map(h => `<th>${h}</th>`).join('')}</tr>${rows.map((d, i) => { const p = d.status === 'tesdiq' ? isbFull(d) : {};
+    const st = d.status === 'redd' ? `<span style="color:#dc2626" title="${e(d.review_note || '')}">Rədd edildi</span>` : e(p.st || 'Təsdiqləndi');
+    return `<tr class="r${d.status === 'redd' ? ' rd' : ''}" onclick="location.hash='doc/${d.id}'"><td><a class="op" href="#doc/${d.id}" title="Aç">⧉</a></td><td><b>${i + 1}</b></td>
+      <td>${e(p.pat || '—')}</td><td>${e(p.dt || d.created_at || '')}</td><td>${st}</td><td>${e(d.dqn || '')}</td><td>${e(p.nv || d.texpasport || '')}</td>
+      <td>${e(p.pay || '')}</td><td>${e(p.sum || '')}</td><td>${e(p.idn || (d.person === 'huq' ? d.voen : d.fin) || '')}</td><td>${e(p.name || '')}</td><td>${e(p.start || '')}</td>
+      <td>${e(U(d.user_id)?.name || d.from_name || '')}</td></tr>`; }).join('')}</table></div>`;
+}
 function isbParts(d){
   const t = String(d.review_note || '').split(/\t|\n| {2,}/).map(x => x.trim()).filter(Boolean);
   return { pat: t.find(x => /^[A-Z]{2,5}\d{6,}$/.test(x)) || d.isb_code || '', dt: t.find(x => /^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}/.test(x)) || '',
@@ -363,7 +386,7 @@ function pDocs(u, qs, done = false){
       ${isF(u) ? `<select name="who"><option value="">Hamı</option>${people.map(p => `<option value="${p.id}" ${who===p.id?'selected':''}>${'— '.repeat(Math.max(0,p.depth-u.depth))}${e(p.name)}</option>`).join('')}</select>` : ''}
       <input type="date" name="from" value="${e(from)}"><input type="date" name="to" value="${e(to)}">
       <button class="btn">Süz</button> <a href="#${wait ? 'wait' : done ? 'done' : 'docs'}">Sıfırla</a>${isF(u) ? ' <button type="button" class="btn xl" id="xl">⬇ Excel ixrac</button>' : ''}</form>
-    <div class="card">${docTable(rows)}</div>`);
+    <div class="card"${done ? ' style="width:calc(100vw - 48px);margin-left:calc(50% - 50vw + 24px);padding:12px"' : ''}>${done ? isbTable(rows) : docTable(rows)}</div>`);
   $('#flt').onsubmit = ev => { ev.preventDefault(); const p = new URLSearchParams();
     for (const [k,v] of new FormData(ev.target)) if (v) p.set(k, v); go((wait ? '#wait?' : done ? '#done?' : '#docs?') + p); };
   if (isF(u)) $('#xl').onclick = () => exportXlsx(rows);
@@ -515,7 +538,7 @@ function pdfFab(page){
   if (!list.length) return;
   if (page === 'pdf') return; const a = document.createElement('a'); a.id = 'pdfFab'; a.href = '#pdf';
   a.innerHTML = (isF(u) ? '📄 PDF istəyi' : '📄 PDF hazırdır') + ` <b style="background:#fff;color:#dc2626;border-radius:999px;padding:1px 8px;margin-left:4px">${list.length}</b>`;
-  a.style.cssText = 'position:fixed;left:18px;bottom:130px;z-index:8000;background:#dc2626;color:#fff;border-radius:999px;padding:12px 18px;font-weight:700;text-decoration:none;box-shadow:0 8px 24px #0004';
+  a.style.cssText = 'position:fixed;left:18px;bottom:18px;z-index:8000;background:#dc2626;color:#fff;border-radius:999px;padding:12px 18px;font-weight:700;text-decoration:none;box-shadow:0 8px 24px #0004';
   document.body.appendChild(a);
 }
 
