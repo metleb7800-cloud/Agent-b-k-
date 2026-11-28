@@ -137,7 +137,7 @@ wakeTick(async () => {
     const ae = document.activeElement, page = (location.hash.slice(1).split('?')[0] || 'home').split('/')[0];
     try { campNotify(); if (document.getElementById('kampFab')) kampFab(page); pdfFab(page); } catch(e){}
     const busy = (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) || document.querySelector('dialog[open]');
-    if (!busy && ['home','docs','done','doc','team','kamp'].includes(page)) { const y = scrollY; render(); scrollTo(0, y); }
+    if (!busy && ['home','docs','done','doc','team','kamp','pdf'].includes(page)) { const y = scrollY; render(); scrollTo(0, y); }
   } catch(e){}
 }, 2000);
 function newCode(){ let c; do { c = String(100000 + Math.floor(Math.random()*900000)); } while (S.users.some(u => u.code === c)); return c; }
@@ -201,7 +201,7 @@ function shell(u, page, body){
   const a = (p, t) => `<a href="#${p}" class="${page===p?'on':''}">${t}</a>`;
   applyBg(u);
   app().innerHTML = `<header class="top"${u.hdrImg ? ` style="background:linear-gradient(90deg,#0f172abb,#0f172a66 40%,#0f172acc),url(${u.hdrImg}) center/cover no-repeat;text-shadow:0 1px 3px #000"` : ''}><a class="brand" href="#home">Agent Şəbəkəsi</a>
-    <nav>${a('home','Panel')}${a('docs','Sənədlər'+(n?` <b class="dot">${n}</b>`:''))}${a('new','+ Sənəd göndər')}${a('team','Komanda')}${a('done','🛡 İcbari Sığorta')}</nav>
+    <nav>${a('home','Panel')}${a('docs','Sənədlər'+(n?` <b class="dot">${n}</b>`:''))}${a('new','+ Sənəd göndər')}${a('team','Komanda')}${a('done','🛡 İcbari Sığorta')}${a('pdf','📄 PDF-lər'+(pdfN(u)?` <b class="dot">${pdfN(u)}</b>`:''))}</nav>
     <div class="who" style="position:relative">${true ? `<img src="${avOf(u)}" alt="" style="position:absolute;right:100%;top:50%;transform:translateY(-50%);margin-right:8px;width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #fff">` : ''}${e(u.name)} <small>${roleName(u)}</small> <a href="#profile">Profil</a> · <a href="#logout">Çıxış</a></div></header>
     <main>${f ? `<div class="flash ${f[1]}">${e(f[0])}</div>` : ''}${body}</main>`;
   drawWatch(page); calcFab(page); kampFab(page); campNotify(); pdfFab(page);
@@ -476,13 +476,43 @@ function pdfWire(u, d){
       if (!save()) { S = load(); return; } toast('PDF yükləndi — agent görəcək.'); render(); };
   }
 }
+const pdfList = u => isF(u) ? S.docs.filter(d => d.status === 'tesdiq' && (d.pdf_req || d.pdf_file))
+                             : S.docs.filter(d => d.user_id === u.id && d.status === 'tesdiq' && (d.pdf_req || d.pdf_file));
+const pdfN = u => isF(u) ? S.docs.filter(d => d.status === 'tesdiq' && d.pdf_req && !d.pdf_file).length
+                         : S.docs.filter(d => d.user_id === u.id && d.status === 'tesdiq' && d.pdf_file && !d.pdf_seen).length;
+// PDF-lər bölməsi: istənilən sənədlər bura düşür; qurucu yalnız PDF yükləyir, kim istəyibsə o endirir
+function pPdf(u){
+  const list = pdfList(u).sort((a, b) => (!!a.pdf_file - !!b.pdf_file) || (b.pdf_req || '').localeCompare(a.pdf_req || ''));
+  const row = d => { const pf = pdfOf(d);
+    const act = isF(u) ? `<button class="btn sm" data-up="${d.id}" style="background:${pf ? '#64748b' : '#dc2626'}">${pf ? '📄 PDF dəyiş' : '📄 PDF yüklə'}</button>`
+      : pf ? `<button class="btn sm" data-get="${d.id}" style="background:#16a34a">📄 PDF endir${d.pdf_seen ? '' : ' • yeni'}</button>` : '<span class="muted">⏳ Gözlənilir</span>';
+    return `<tr><td>${d.id}</td><td><a href="#doc/${d.id}">${e(d.title)}</a>${isbLine(d) ? `<br><small style="color:#166534;font-weight:600">${isbLine(d)}</small>` : ''}</td>
+      <td>${e(U(d.pdf_req_by || d.user_id)?.name || d.from_name || '')}</td><td><small>${e(d.pdf_req || '')}</small></td>
+      <td>${pf ? `<small style="color:#16a34a">✓ ${e(pf.name)}</small>` : '<small style="color:#dc2626">yüklənməyib</small>'}</td><td>${act}</td></tr>`; };
+  shell(u, 'pdf', `<h1>📄 PDF-lər <small class="muted">(${list.length})</small></h1>
+    <p class="muted">${isF(u) ? 'PDF istənilən təsdiqlənmiş sənədlər. PDF-i yükləyin — istəyən şəxsə gedəcək.' : 'İstədiyiniz PDF-lər. Qurucu yükləyəndə burada “PDF endir” çıxır.'}</p>
+    <div class="card">${list.length ? `<div class="tbl"><table><tr><th>#</th><th>Sənəd</th><th>İstəyən</th><th>İstənilib</th><th>PDF</th><th></th></tr>${list.map(row).join('')}</table></div>` : '<p class="muted">PDF istəyi yoxdur.</p>'}</div>
+    <input type="file" id="pdfIn" accept="application/pdf,.pdf" hidden>`);
+  let tgt = null;
+  document.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { tgt = S.docs.find(d => d.id === +b.dataset.up); $('#pdfIn').value = ''; $('#pdfIn').click(); });
+  $('#pdfIn').onchange = async ev => { const x = ev.target.files[0], d = tgt; if (!x || !d) return;
+    if (!/\.pdf$/i.test(x.name) && x.type !== 'application/pdf') return alert('Yalnız PDF faylı seçin.');
+    if (x.size > PDF_MB * 1048576) return alert(`PDF ${PDF_MB} MB-dan böyük olmamalıdır.`);
+    const data = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(x); });
+    const old = pdfOf(d); if (old) S.files = S.files.filter(f => f.id !== old.id);
+    const fid = nid('f'); S.files.push({ id:fid, document_id:d.id, name:x.name, mime:'application/pdf', size:x.size, data, pdf:true });
+    d.pdf_file = fid; d.pdf_at = now(); d.pdf_seen = false; logAdd(d.id, u.id, 'PDF yüklədi', x.name);
+    if (!save()) { S = load(); return; } toast('PDF yükləndi — istəyənə getdi.'); render(); };
+  document.querySelectorAll('[data-get]').forEach(b => b.onclick = () => { const d = S.docs.find(x => x.id === +b.dataset.get), pf = pdfOf(d); if (!pf) return;
+    const l = document.createElement('a'); l.href = pf.data; l.download = pf.name; l.click(); if (!d.pdf_seen) { d.pdf_seen = true; save(); render(); } });
+}
 // Sol aşağıda üzən düymə: qurucuya "PDF istəkləri", agentə "PDF hazırdır" (heç bir düymənin yerini dəyişmir)
 function pdfFab(page){
   document.getElementById('pdfFab')?.remove(); const u = me && me(); if (!u) return;
   const list = isF(u) ? branchDocs(u).filter(d => d.status === 'tesdiq' && d.pdf_req && !d.pdf_file)
                       : S.docs.filter(d => d.user_id === u.id && d.status === 'tesdiq' && d.pdf_file && !d.pdf_seen);
   if (!list.length) return;
-  const a = document.createElement('a'); a.id = 'pdfFab'; a.href = '#doc/' + list[0].id;
+  if (page === 'pdf') return; const a = document.createElement('a'); a.id = 'pdfFab'; a.href = '#pdf';
   a.innerHTML = (isF(u) ? '📄 PDF istəyi' : '📄 PDF hazırdır') + ` <b style="background:#fff;color:#dc2626;border-radius:999px;padding:1px 8px;margin-left:4px">${list.length}</b>`;
   a.style.cssText = 'position:fixed;left:18px;bottom:130px;z-index:8000;background:#dc2626;color:#fff;border-radius:999px;padding:12px 18px;font-weight:700;text-decoration:none;box-shadow:0 8px 24px #0004';
   document.body.appendChild(a);
@@ -1238,7 +1268,7 @@ function render(){
   const u = me();
   if (!u) return pLogin();
   window.scrollTo(0, 0);
-  ({ home:pHome, docs:pDocs, done:(u, q) => pDocs(u, q, true), calc:pCalc, kamp:pKamp, wait:(u, q) => pDocs(u, q, 'wait'), new:pNew, doc:pDoc, team:pTeam, profile:pProfile }[page] || pHome)(u, page === 'doc' ? arg : qs);
+  ({ home:pHome, docs:pDocs, done:(u, q) => pDocs(u, q, true), calc:pCalc, kamp:pKamp, pdf:pPdf, wait:(u, q) => pDocs(u, q, 'wait'), new:pNew, doc:pDoc, team:pTeam, profile:pProfile }[page] || pHome)(u, page === 'doc' ? arg : qs);
 }
 // Bir dəfəlik: qurucunun girişi Kod ADMIN / Parol 123
 (async () => {
