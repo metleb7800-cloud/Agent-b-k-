@@ -201,7 +201,7 @@ function shell(u, page, body){
   const a = (p, t) => `<a href="#${p}" class="${page===p?'on':''}">${t}</a>`;
   applyBg(u);
   app().innerHTML = `<header class="top"${u.hdrImg ? ` style="background:linear-gradient(90deg,#0f172abb,#0f172a66 40%,#0f172acc),url(${u.hdrImg}) center/cover no-repeat;text-shadow:0 1px 3px #000"` : ''}><a class="brand" href="#home">Agent Şəbəkəsi</a>
-    <nav>${a('home','Panel')}${a('docs','Sənədlər'+(n?` <b class="dot">${n}</b>`:''))}${a('new','+ Sənəd göndər')}${a('calc','🧮 Kalkulyator')}${a('team','Komanda')}${a('done','🛡 İcbari Sığorta')}${a('pdf','📄 PDF-lər'+(pdfN(u)?` <b class="dot">${pdfN(u)}</b>`:''))}${a('kamp','📢 Kampaniyalar'+(kampUnseen()?` <b class="dot">${kampUnseen()}</b>`:''))}</nav>
+    <nav>${a('home','Panel')}${a('docs','Sənədlər'+(n?` <b class="dot">${n}</b>`:''))}${a('new','+ Sənəd göndər')}${a('team','Komanda')}${a('done','🛡 İcbari Sığorta')}${a('pdf','📄 PDF-lər'+(pdfN(u)?` <b class="dot">${pdfN(u)}</b>`:''))}${a('calc','🧮 Kalkulyator')}${a('kamp','📢 Kampaniyalar'+(kampUnseen()?` <b class="dot">${kampUnseen()}</b>`:''))}</nav>
     <div class="who" style="position:relative">${true ? `<img src="${avOf(u)}" alt="" style="position:absolute;right:100%;top:50%;transform:translateY(-50%);margin-right:8px;width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #fff">` : ''}${e(u.name)} <small>${roleName(u)}</small> <a href="#profile">Profil</a> · <a href="#logout">Çıxış</a></div></header>
     <main>${f ? `<div class="flash ${f[1]}">${e(f[0])}</div>` : ''}${body}</main>`;
   drawWatch(page); campNotify(); pdfFab(page);
@@ -639,7 +639,7 @@ function pTeam(u){
 .org .node.off{opacity:.5}.org .oav{width:58px;height:58px;border-radius:50%;object-fit:cover;border:3px solid #3b5ba9;background:#fff}
 .org .onm{font-size:14px;line-height:1.2}.org .node small{font-size:11px;line-height:1.3}
 .org .acts{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 8px;margin-top:3px}.org .acts .link{font-size:11px;padding:0}
-</style><div class="card tree org"><ul>${node(u)}</ul></div>
+</style><div class="card tree org" style="position:relative"><div id="zm" style="position:sticky;left:100%;top:0;float:right;display:flex;gap:4px;z-index:5"><button type="button" class="btn ghost sm" data-z="-1" title="Uzaqlaşdır">−</button><button type="button" class="btn ghost sm" data-z="0" title="Normal ölçü" id="zv">100%</button><button type="button" class="btn ghost sm" data-z="1" title="Yaxınlaşdır">+</button></div><ul id="orgUl">${node(u)}</ul></div>
     <dialog id="dAdd"><form id="fAdd"><h2 id="tAdd"></h2><div id="eAdd"></div>
       <label>Ad Soyad<input name="name" required></label>
       <label>Telefon nömrəsi * (kod bu nömrəyə göndəriləcək)${phoneFields()}</label>
@@ -651,6 +651,15 @@ function pTeam(u){
       <label>Yeni giriş kodu<input name="code" required class="up" maxlength="12"></label>
       <label>Yeni parol <small class="muted">(boş qalsa, dəyişmir)</small><input name="password" minlength="3"></label>
       <div class="row"><button class="btn">Yadda saxla</button><button type="button" class="btn ghost" onclick="dEd.close()">Ləğv et</button></div></form></dialog>`);
+  { // Budağı yaxınlaşdır / uzaqlaşdır (düymələr və Ctrl + təkər)
+    let z = +(localStorage.getItem('agentnet_zoom') || 1);
+    const setZ = v => { z = Math.min(2, Math.max(0.3, Math.round(v * 10) / 10)); $('#orgUl').style.zoom = z; $('#zv').textContent = Math.round(z * 100) + '%'; try { localStorage.setItem('agentnet_zoom', z); } catch (e) {} };
+    document.querySelectorAll('[data-z]').forEach(b => b.onclick = () => setZ(+b.dataset.z ? z + 0.1 * +b.dataset.z : 1));
+    $('.org').addEventListener('wheel', ev => { if (!ev.ctrlKey) return; ev.preventDefault(); setZ(z + (ev.deltaY < 0 ? 0.1 : -0.1)); }, { passive: false });
+    let pd = 0; $('.org').addEventListener('touchmove', ev => { if (ev.touches.length !== 2) return; const d = Math.hypot(ev.touches[0].clientX - ev.touches[1].clientX, ev.touches[0].clientY - ev.touches[1].clientY);
+      if (pd) { ev.preventDefault(); setZ(z * d / pd); } pd = d; }, { passive: false });
+    $('.org').addEventListener('touchend', () => pd = 0);
+    setZ(z); }
   { const o = $('.org'); if (o) o.scrollLeft = (o.scrollWidth - o.clientWidth) / 2; }
   const gen = () => String(100 + Math.floor(Math.random()*900));
   let target = null;
